@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          String    @default("PROFESSIONAL") // PROFESSIONAL, PATIENT, ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  notifications Notification[]
+  patientProfile Patient?  @relation(name: "UserToPatient") // If this user is a patient
+}
+
+model Patient {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  gender        String    // Masculino, Feminino
+  dateOfBirth   DateTime
+  status        String    @default("Ativo") // Lead, Avaliação, Em Terapia, Em Espera, Alta, Arquivado
+  imageUrl      String?
+  startDate     DateTime  @default(now())
+  
+  // CRM Fields
+  motherName    String?
+  fatherName    String?
+  address       String?
+  observations  String?   // Notes/Observations
+  
+  // Relations
+  userId        String?   @unique // Link to a User account for Portal access
+  user          User?     @relation(name: "UserToPatient", fields: [userId], references: [id])
+  
+  appointments  Appointment[]
+  reports       Report[]
+  assessments   Assessment[]
+  exams         Exam[]
+  goals         Goal[]
+  exercises     Exercise[]
+  treatmentProgress TreatmentProgress[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String?
+  status      String   // Agendado, Realizado, Cancelado
+  type        String   // Terapia, Avaliação, Consulta
+  notes       String?
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // Avaliação, Evolução
+  status      String   // Finalizado, Rascunho
+  date        DateTime
+  content     String?  // HTML or JSON
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Assessment {
+  id          String   @id @default(cuid())
+  title       String? // e.g. "Avaliação Inicial"
+  date        DateTime
+  status      String   // Finalizada
+  type        String   // Inicial, Progresso
+  description String?
+  metrics     String?  // JSON for detailed metrics
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Exam {
+  id          String   @id @default(cuid())
+  title       String   // e.g. Audiometria
+  date        DateTime
+  status      String   // Finalizado, Pendente, Agendado
+  type        String?
+  fileUrl     String?
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  description String
+  progress    Int      @default(0)
+  status      String   // Em andamento, Concluído
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  frequency   String
+  duration    String
+  status      String   @default("Pendente")
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TreatmentProgress {
+  id          String   @id @default(cuid())
+  month       String   // e.g. "Jan 2024"
+  attended    Int
+  total       Int
+  attendanceRate Float
+  expected    Float?
+  realized    Float?
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  type      String   // Payment, Schedule
+  read      Boolean  @default(false)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
