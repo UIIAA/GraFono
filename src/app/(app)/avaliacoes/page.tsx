@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,7 +9,6 @@ import {
     Filter,
     ClipboardList,
     MoreHorizontal,
-    User,
     Calendar,
     Activity,
     CheckCircle2,
@@ -16,43 +16,49 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const evaluations = [
-    {
-        id: 1,
-        patient: "João Silva",
-        type: "Avaliação Inicial",
-        date: "22 Dez 2024",
-        status: "Agendado",
-        statusColor: "bg-blue-100 text-blue-700"
-    },
-    {
-        id: 2,
-        patient: "Maria Santos",
-        type: "Reavaliação Trimestral",
-        date: "20 Dez 2024",
-        status: "Concluído",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 3,
-        patient: "Pedro Souza",
-        type: "Avaliação de Fala",
-        date: "18 Dez 2024",
-        status: "Pendente",
-        statusColor: "bg-orange-100 text-orange-700"
-    },
-    {
-        id: 4,
-        patient: "Ana Oliveira",
-        type: "Triagem Auditiva",
-        date: "15 Dez 2024",
-        status: "Concluído",
-        statusColor: "bg-green-100 text-green-700"
-    },
-];
+import { getAssessments } from "@/app/actions/assessment";
+import { getPatients } from "@/app/actions/patient";
+import { EvaluationDialog } from "./_components/evaluation-dialog";
 
 export default function AvaliacoesPage() {
+    const [evaluations, setEvaluations] = useState<any[]>([]);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingEvaluation, setEditingEvaluation] = useState<any>(undefined);
+
+    async function loadData() {
+        const [evalResult, patResult] = await Promise.all([
+            getAssessments(),
+            getPatients()
+        ]);
+
+        if (evalResult.success && evalResult.data) {
+            setEvaluations(evalResult.data);
+        }
+        if (patResult.success && patResult.data) {
+            setPatients(patResult.data);
+        }
+    }
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    // Stats
+    const total = evaluations.length;
+    const completed = evaluations.filter(e => e.status === 'Concluído').length;
+    const pending = evaluations.filter(e => e.status === 'Pendente' || e.status === 'Agendado').length;
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'Concluído': return 'bg-green-100 text-green-700';
+            case 'Pendente': return 'bg-orange-100 text-orange-700';
+            case 'Agendado': return 'bg-blue-100 text-blue-700';
+            case 'Cancelado': return 'bg-red-100 text-red-700';
+            default: return 'bg-slate-100 text-slate-700';
+        }
+    };
+
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassInput = "bg-white/50 border-red-100 focus:bg-white/80 transition-all";
@@ -79,7 +85,13 @@ export default function AvaliacoesPage() {
                         <p className="text-slate-500">Gestão de Diagnósticos e Testes</p>
                     </div>
                 </div>
-                <Button className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-11 px-6">
+                <Button
+                    onClick={() => {
+                        setEditingEvaluation(undefined);
+                        setIsDialogOpen(true);
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-11 px-6"
+                >
                     <Plus className="mr-2 h-4 w-4" /> Nova Avaliação
                 </Button>
             </div>
@@ -88,12 +100,12 @@ export default function AvaliacoesPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                 <Card className={`${glassCard} border-0`}>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Total este mês</CardTitle>
+                        <CardTitle className="text-sm font-medium text-slate-600">Total Avaliações</CardTitle>
                         <Activity className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">24</div>
-                        <p className="text-xs text-slate-500">+12% vs mês anterior</p>
+                        <div className="text-2xl font-bold text-slate-800">{total}</div>
+                        <p className="text-xs text-slate-500">Registros no sistema</p>
                     </CardContent>
                 </Card>
                 <Card className={`${glassCard} border-0`}>
@@ -102,8 +114,8 @@ export default function AvaliacoesPage() {
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">18</div>
-                        <p className="text-xs text-slate-500">75% da meta mensal</p>
+                        <div className="text-2xl font-bold text-slate-800">{completed}</div>
+                        <p className="text-xs text-slate-500">Avaliações finalizadas</p>
                     </CardContent>
                 </Card>
                 <Card className={`${glassCard} border-0`}>
@@ -112,8 +124,8 @@ export default function AvaliacoesPage() {
                         <Clock className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">6</div>
-                        <p className="text-xs text-slate-500">4 agendadas para esta semana</p>
+                        <div className="text-2xl font-bold text-slate-800">{pending}</div>
+                        <p className="text-xs text-slate-500">Agendadas ou em andamento</p>
                     </CardContent>
                 </Card>
             </div>
@@ -152,24 +164,31 @@ export default function AvaliacoesPage() {
 
                     <div className="divide-y divide-white/40 bg-white/20">
                         {evaluations.map((item) => (
-                            <div key={item.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer">
+                            <div
+                                key={item.id}
+                                className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer"
+                                onClick={() => {
+                                    setEditingEvaluation(item);
+                                    setIsDialogOpen(true);
+                                }}
+                            >
                                 <div className="col-span-4 flex items-center gap-3">
                                     <Avatar className="h-8 w-8 bg-white shadow-sm">
                                         <AvatarFallback className="text-red-500 font-bold bg-red-50 text-xs">
-                                            {item.patient.substring(0, 2).toUpperCase()}
+                                            {item.patient?.name?.substring(0, 2).toUpperCase() || "PT"}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <span className="text-sm font-semibold text-slate-800">{item.patient}</span>
+                                    <span className="text-sm font-semibold text-slate-800">{item.patient?.name || "Paciente"}</span>
                                 </div>
                                 <div className="col-span-3">
                                     <span className="text-sm text-slate-600 font-medium">{item.type}</span>
                                 </div>
                                 <div className="col-span-2 flex items-center gap-2 text-slate-500 text-sm">
                                     <Calendar className="h-3 w-3" />
-                                    {item.date}
+                                    {new Date(item.date).toLocaleDateString()}
                                 </div>
                                 <div className="col-span-2">
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-opacity-60 ${item.statusColor}`}>
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-opacity-60 ${getStatusColor(item.status)}`}>
                                         {item.status}
                                     </span>
                                 </div>
@@ -180,9 +199,22 @@ export default function AvaliacoesPage() {
                                 </div>
                             </div>
                         ))}
+                        {evaluations.length === 0 && (
+                            <div className="p-8 text-center text-slate-500">
+                                Nenhuma avaliação encontrada.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            <EvaluationDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                patients={patients}
+                evaluation={editingEvaluation}
+                onSave={loadData}
+            />
         </div>
     )
 }

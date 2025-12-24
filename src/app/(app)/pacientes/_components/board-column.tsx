@@ -12,9 +12,11 @@ interface BoardColumnProps {
     column: Column;
     tasks: Task[];
     className?: string;
+    onEdit?: (task: Task) => void;
+    onHistory?: (task: Task) => void;
 }
 
-export function BoardColumn({ column, tasks, className }: BoardColumnProps) {
+export function BoardColumn({ column, tasks, className, onEdit, onHistory }: BoardColumnProps) {
     const { setNodeRef } = useDroppable({
         id: column.id,
         data: {
@@ -54,6 +56,8 @@ export function BoardColumn({ column, tasks, className }: BoardColumnProps) {
                             key={task.id}
                             task={task}
                             patientName={task.content}
+                            onEdit={onEdit}
+                            onHistory={onHistory}
                         />
                     ))}
                 </SortableContext>

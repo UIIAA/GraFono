@@ -1,11 +1,21 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getAppointments } from "@/app/actions/appointment";
+import { getPatients } from "@/app/actions/patient";
+import { NewAppointmentDialog } from "./_components/new-appointment-dialog";
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 to 19:00
+
+// Dynamic dates would be better, but for now hooking into existing structure
+// We can assume user is looking at current week? Or stick to specific week?
+// The UI shows "Dezembro 2024" and "Dom 21" - "Sab 27". This is effectively hardcoded to Dec 21-27 2024.
+// I will keep this hardcoded range for visual consistency as requested, but map Real DB dates to these slots if they fall in range.
+
 const DAYS = [
     { name: "Dom", full: "Domingo", date: 21 },
     { name: "Seg", full: "Segunda", date: 22, current: true },
@@ -17,6 +27,66 @@ const DAYS = [
 ];
 
 export default function AgendaPage() {
+    const [appointments, setAppointments] = useState<any[]>([]);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | undefined>(undefined);
+
+    async function loadData() {
+        const [res, patRes] = await Promise.all([
+            getAppointments(),
+            getPatients()
+        ]);
+        if (res.success && res.data) {
+            setAppointments(res.data);
+        }
+        if (patRes.success && patRes.data) {
+            setPatients(patRes.data);
+        }
+    }
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    // Helper to position events
+    const getEventStyle = (apt: any) => {
+        const date = new Date(apt.date);
+        const day = date.getDate(); // 21-27
+        const hourStr = apt.time || "08:00";
+        const hour = parseInt(hourStr.split(':')[0]);
+        const minutes = parseInt(hourStr.split(':')[1] || "0");
+
+        // Find column index (0-6) based on DAYS array matches
+        const dayIndex = DAYS.findIndex(d => d.date === day);
+
+        if (dayIndex === -1) return { display: 'none' };
+
+        // Vertical pos
+        // 8:00 is top 0?
+        // each hour is 80px
+        const top = (hour - 8) * 80 + (minutes / 60) * 80;
+
+        return {
+            top: `${top}px`,
+            left: `calc(4rem + (100% - 4rem) * ${dayIndex} / 7)`,
+            width: `calc((100% - 4rem) / 7 - 8px)`, // slightly smaller for gap
+            height: '74px',
+            background: apt.type === 'Avaliação'
+                ? "linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)"
+                : "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
+            backdropFilter: "blur(4px)"
+        };
+    };
+
+    const handleSlotClick = (dayDate: number, hour: number) => {
+        // Construct date: Dec 2024
+        const date = new Date(2024, 11, dayDate); // Month is 0-indexed: 11 = Dec
+        const time = `${hour.toString().padStart(2, '0')}:00`;
+        setSelectedSlot({ date, time });
+        setIsDialogOpen(true);
+    };
+
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassButton = "bg-white/80 hover:bg-white border border-red-100 backdrop-blur-sm text-slate-700 shadow-sm";
@@ -55,7 +125,13 @@ export default function AgendaPage() {
                             </Button>
                         ))}
                     </div>
-                    <Button className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-10 px-4 transition-transform hover:scale-105">
+                    <Button
+                        onClick={() => {
+                            setSelectedSlot(undefined);
+                            setIsDialogOpen(true);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-10 px-4 transition-transform hover:scale-105"
+                    >
                         <Plus className="mr-2 h-4 w-4" /> Novo Evento
                     </Button>
                 </div>
@@ -119,8 +195,9 @@ export default function AgendaPage() {
                             {DAYS.map((day) => (
                                 <div
                                     key={day.date}
+                                    onClick={() => handleSlotClick(day.date, hour)}
                                     className={cn(
-                                        "flex-1 border-r border-white/30 last:border-r-0 h-full relative group-hover:bg-white/10 transition-colors",
+                                        "flex-1 border-r border-white/30 last:border-r-0 h-full relative cursor-pointer hover:bg-white/40 transition-colors",
                                         day.current ? "bg-red-50/10" : ""
                                     )}
                                 />
@@ -128,52 +205,43 @@ export default function AgendaPage() {
                         </div>
                     ))}
 
-                    {/* Events Overlay */}
-                    {/* Event 1 - Stylized */}
-                    <div
-                        className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
-                        style={{
-                            top: '160px', // 10:00 assuming 80px slots
-                            left: 'calc(4rem + (100% - 4rem) * 1 / 7)',
-                            width: 'calc((100% - 4rem) / 7 - 8px)',
-                            height: '74px', // slightly less than 80px
-                            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)",
-                            backdropFilter: "blur(4px)"
-                        }}
-                    >
-                        <div className="flex justify-between items-start text-white">
-                            <span className="font-bold text-xs">Avaliação Inicial</span>
+                    {/* DB Events */}
+                    {appointments.map(apt => (
+                        <div
+                            key={apt.id}
+                            className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
+                            style={getEventStyle(apt)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                // Edit logic could go here
+                            }}
+                        >
+                            <div className="flex justify-between items-start text-white">
+                                <span className="font-bold text-xs">{apt.type || "Consulta"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                                <Avatar className="h-6 w-6 border-2 border-white/30">
+                                    <AvatarFallback className="bg-white/20 text-white text-[9px]">
+                                        {apt.patient?.name?.substring(0, 2).toUpperCase() || "PT"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="text-white/90 text-[10px] font-medium">
+                                    {apt.patient?.name || "Paciente"}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                            <Avatar className="h-6 w-6 border-2 border-white/30">
-                                <AvatarFallback className="bg-white/20 text-white text-[9px]">JS</AvatarFallback>
-                            </Avatar>
-                            <span className="text-white/90 text-[10px] font-medium">João Silva</span>
-                        </div>
-                    </div>
-
-                    {/* Event 2 - Stylized */}
-                    <div
-                        className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
-                        style={{
-                            top: '480px', // 14:00
-                            left: 'calc(4rem + (100% - 4rem) * 3 / 7)',
-                            width: 'calc((100% - 4rem) / 7 - 8px)',
-                            height: '74px',
-                            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
-                        }}
-                    >
-                        <div className="flex justify-between items-start text-white">
-                            <span className="font-bold text-xs">Reunião Pais</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="text-white/90 text-[10px] font-medium flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> 14:00 - 15:00
-                            </span>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
+
+            <NewAppointmentDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                patients={patients}
+                initialDate={selectedSlot?.date}
+                initialTime={selectedSlot?.time}
+                onSave={loadData}
+            />
         </div>
     )
 }

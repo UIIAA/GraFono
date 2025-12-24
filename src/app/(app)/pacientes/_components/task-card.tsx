@@ -5,17 +5,19 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { User, History as HistoryIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Task } from "../types";
-import { User } from "lucide-react";
 
 interface TaskCardProps {
     task: Task;
     patientName: string;
     className?: string;
+    onEdit?: (task: Task) => void;
+    onHistory?: (task: Task) => void;
 }
 
-export function TaskCard({ task, patientName, className }: TaskCardProps) {
+export function TaskCard({ task, patientName, className, onEdit, onHistory }: TaskCardProps) {
     const {
         setNodeRef,
         attributes,
@@ -88,6 +90,32 @@ export function TaskCard({ task, patientName, className }: TaskCardProps) {
                             </Badge>
                         ))}
                     </div>
+
+                    <div className="pt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div
+                            role="button"
+                            className="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-md cursor-pointer pointer-events-auto"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit?.(task);
+                            }}
+                            title="Editar Dados"
+                        >
+                            <User className="w-4 h-4" />
+                        </div>
+                        <div
+                            role="button"
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-1.5 rounded-md cursor-pointer pointer-events-auto"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onHistory?.(task);
+                            }}
+                            title="Histórico / Pontos Relevantes"
+                        >
+                            <HistoryIcon className="w-4 h-4" />
+                        </div>
+                    </div>
+
                 </CardContent>
             </Card>
         </div>

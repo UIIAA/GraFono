@@ -43,6 +43,7 @@ model Patient {
   fatherName    String?
   address       String?
   observations  String?   // Notes/Observations
+  negotiatedValue Float?  // Valor negociado mensal/sessão
   
   // Relations
   userId        String?   @unique // Link to a User account for Portal access
@@ -55,9 +56,39 @@ model Patient {
   goals         Goal[]
   exercises     Exercise[]
   treatmentProgress TreatmentProgress[]
-  
+  transactions  Transaction[]
+  history       PatientHistory[]
+  knowledgeBase PatientKnowledgeBase[]
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model PatientHistory {
+  id        String   @id @default(cuid())
+  content   String
+  date      DateTime @default(now())
+
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  type        String   // avaliacao, tratamento
+  status      String   // pago, pendente, atrasado
+  dueDate     DateTime
+  paymentDate DateTime?
+
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Appointment {
@@ -82,6 +113,8 @@ model Report {
   status      String   // Finalizado, Rascunho
   date        DateTime
   content     String?  // HTML or JSON
+  fileUrl     String?
+  summary     String?  // AI Summary
   
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
@@ -98,6 +131,8 @@ model Assessment {
   type        String   // Inicial, Progresso
   description String?
   metrics     String?  // JSON for detailed metrics
+  fileUrl     String?
+  summary     String?  // AI Summary
   
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
@@ -113,6 +148,23 @@ model Exam {
   status      String   // Finalizado, Pendente, Agendado
   type        String?
   fileUrl     String?
+  summary     String?  // AI Summary
+  
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PatientKnowledgeBase {
+  id          String   @id @default(cuid())
+  type        String   // AVALIACAO, EXAME, RELATORIO, OBSERVACAO
+  date        DateTime @default(now())
+  content     String   // Full text or summary
+  fileUrl     String?
+  
+  sourceId    String   // ID of the original record (Exam, Assessment, etc.)
   
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])

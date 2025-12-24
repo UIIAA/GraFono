@@ -19,6 +19,9 @@ import {
 import {
     sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { getPatients, savePatient, updatePatientStatus } from "@/app/actions/patient";
+// Ensure types are consistent or imported
+
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -49,6 +52,7 @@ import {
 import { BoardColumn } from "./_components/board-column";
 import { TaskCard } from "./_components/task-card";
 import { PatientDialog } from "./_components/patient-dialog";
+import { HistoryDialog } from "./_components/history-dialog";
 import { Column, Task, Patient } from "./types";
 
 const defaultCols: Column[] = [
@@ -70,49 +74,99 @@ const defaultCols: Column[] = [
     },
 ];
 
-const initialTasks: Task[] = [
-    {
-        id: "1",
-        columnId: "em_andamento",
-        content: "João Silva",
-        patientId: "p1",
-        tags: ["Fono", "Terapia"],
-    },
-    {
-        id: "2",
-        columnId: "em_avaliacao",
-        content: "Maria Santos",
-        patientId: "p2",
-        tags: ["Avaliação"],
-    },
-    {
-        id: "3",
-        columnId: "alta",
-        content: "Pedro Souza",
-        patientId: "p3",
-        tags: ["Alta"],
-    },
-    {
-        id: "4",
-        columnId: "em_andamento",
-        content: "Ana Oliveira",
-        patientId: "p4",
-        tags: ["Fono"],
-    },
-];
 
-const initialPatients: Patient[] = [
-    { id: "p1", name: "João Silva", email: "joao@email.com", phone: "11999999999", status: "Em tratamento", history: [] },
-    { id: "p2", name: "Maria Santos", email: "maria@email.com", phone: "11888888888", status: "Aguardando", history: [] },
-    { id: "p3", name: "Pedro Souza", email: "pedro@email.com", phone: "11777777777", status: "Alta", history: [] },
-    { id: "p4", name: "Ana Oliveira", email: "ana@email.com", phone: "11666666666", status: "Em tratamento", history: [] },
-];
 
 export default function PacientesPage() {
     // State
     const [columns, setColumns] = useState<Column[]>(defaultCols);
-    const [tasks, setTasks] = useState<Task[]>(initialTasks);
-    const [patients, setPatients] = useState<Patient[]>(initialPatients);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [patients, setPatients] = useState<Patient[]>([]);
+
+    useEffect(() => {
+        async function loadPatients() {
+            try {
+                const result = await getPatients();
+                if (result.success && result.data) {
+                    const dbPatients = result.data.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        email: p.email || "",
+                        phone: p.phone || "",
+                        status: p.status,
+                        history: [],
+                        negotiatedValue: p.negotiatedValue || 0,
+                        motherName: p.motherName,
+                        fatherName: p.fatherName,
+                        observations: p.observations,
+                        address: p.address,
+                        dob: p.dateOfBirth,
+                    }));
+                    setPatients(dbPatients);
+
+                    const dbTasks = dbPatients.map((p: any) => {
+                        let colId = "aguardando";
+                        if (p.status === "Em Avaliação" || p.status === "em_avaliacao" || p.status === "Em avaliação") colId = "em_avaliacao";
+                        if (p.status === "Em Terapia" || p.status === "Em Tratamento" || p.status === "em_andamento") colId = "em_andamento";
+                        if (p.status === "Alta" || p.status === "alta") colId = "alta";
+
+                        return {
+                            id: p.id,
+                            columnId: colId,
+                            content: p.name,
+                            patientId: p.id,
+                            tags: [p.status],
+                        };
+                    });
+                    setTasks(dbTasks);
+                }
+            } catch (error) {
+                console.error("Failed to load patients", error);
+            }
+        }
+        loadPatients();
+    }, []);
+
+    useEffect(() => {
+        async function loadPatients() {
+            const result = await getPatients();
+            if (result.success && result.data) {
+                // Map DB patients to UI types
+                const dbPatients = result.data.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    email: p.email || "",
+                    phone: p.phone || "",
+                    status: p.status, // Ensure DB status matches UI expected values or map them
+                    history: [],
+                    negotiatedValue: p.negotiatedValue || 0,
+                    motherName: p.motherName,
+                    fatherName: p.fatherName,
+                    observations: p.observations,
+                    address: p.address,
+                    dob: p.dateOfBirth,
+                }));
+                setPatients(dbPatients);
+
+                // Map to Tasks
+                const dbTasks = dbPatients.map((p: any) => {
+                    let colId = "aguardando";
+                    if (p.status === "Em Avaliação" || p.status === "em_avaliacao") colId = "em_avaliacao";
+                    if (p.status === "Em Terapia" || p.status === "Em Tratamento" || p.status === "em_andamento") colId = "em_andamento";
+                    if (p.status === "Alta" || p.status === "alta") colId = "alta";
+
+                    return {
+                        id: p.id, // Use patient ID for task ID to simplify
+                        columnId: colId,
+                        content: p.name,
+                        patientId: p.id,
+                        tags: [p.status],
+                    };
+                });
+                setTasks(dbTasks);
+            }
+        }
+        loadPatients();
+    }, []);
 
     // Dnd State
     const [activeColumn, setActiveColumn] = useState<Column | null>(null);
@@ -120,7 +174,9 @@ export default function PacientesPage() {
 
     // Dialog State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [editingPatient, setEditingPatient] = useState<Patient | undefined>(undefined);
+    const [historyPatient, setHistoryPatient] = useState<Patient | undefined>(undefined);
 
     // Sensors
     const sensors = useSensors(
@@ -135,37 +191,71 @@ export default function PacientesPage() {
     );
 
     // Handlers
-    function handleSavePatient(patientData: Partial<Patient>) {
-        if (editingPatient) {
-            setPatients((prev) =>
-                prev.map((p) => (p.id === editingPatient.id ? { ...p, ...patientData } : p))
-            );
-            const taskIndex = tasks.findIndex((t) => t.patientId === editingPatient.id);
-            if (taskIndex !== -1) {
-                const updatedTasks = [...tasks];
-                updatedTasks[taskIndex] = { ...updatedTasks[taskIndex], content: patientData.name || "" };
-                setTasks(updatedTasks);
+    async function handleSavePatient(patientData: Partial<Patient>) {
+        try {
+            // Optimistic Update
+            const tempId = editingPatient ? editingPatient.id : `temp-${Date.now()}`;
+
+            // Map UI status back to consistent DB strings
+            const statusMap: Record<string, string> = {
+                "aguardando": "Aguardando",
+                "em_avaliacao": "Em avaliação",
+                "em_andamento": "Em Tratamento",
+                "alta": "Alta"
+            };
+
+            // Only update status if it's a new patient (default) or explicitly changed?
+            // For editing, we keep existing status unless UI allows changing it (DND does that).
+            // Dialog doesn't have status selector, so we keep existing or default.
+            const currentStatus = editingPatient?.status || "Aguardando";
+
+            const payload = {
+                id: editingPatient?.id,
+                ...patientData,
+                status: currentStatus,
+                negotiatedValue: patientData.negotiatedValue
+            };
+
+            await savePatient(payload);
+
+            // Reload to get real ID and data
+            const result = await getPatients();
+            if (result.success && result.data) {
+                const dbPatients = result.data.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    email: p.email || "",
+                    phone: p.phone || "",
+                    status: p.status,
+                    history: [],
+                    negotiatedValue: p.negotiatedValue || 0,
+                    motherName: p.motherName,
+                    fatherName: p.fatherName,
+                    observations: p.observations,
+                    address: p.address,
+                    dob: p.dateOfBirth,
+                }));
+                setPatients(dbPatients);
+
+                const dbTasks = dbPatients.map((p: any) => {
+                    let colId = "aguardando";
+                    if (p.status === "Em Avaliação" || p.status === "em_avaliacao" || p.status === "Em avaliação") colId = "em_avaliacao";
+                    if (p.status === "Em Terapia" || p.status === "Em Tratamento" || p.status === "em_andamento") colId = "em_andamento";
+                    if (p.status === "Alta" || p.status === "alta") colId = "alta";
+
+                    return {
+                        id: p.id,
+                        columnId: colId,
+                        content: p.name,
+                        patientId: p.id,
+                        tags: [p.status],
+                    };
+                });
+                setTasks(dbTasks);
             }
-        } else {
-            const newId = `p${Date.now()}`;
-            const newPatient: Patient = {
-                id: newId,
-                name: patientData.name || "Novo Paciente",
-                email: patientData.email || "",
-                phone: patientData.phone || "",
-                status: "Aguardando",
-                history: [],
-                ...patientData
-            };
-            setPatients((prev) => [...prev, newPatient]);
-            const newTask: Task = {
-                id: `t${Date.now()}`,
-                columnId: "aguardando",
-                content: newPatient.name,
-                patientId: newId,
-                tags: ["Novo"],
-            };
-            setTasks((prev) => [...prev, newTask]);
+
+        } catch (error) {
+            console.error("Failed to save patient", error);
         }
         setIsDialogOpen(false);
         setEditingPatient(undefined);
@@ -176,6 +266,14 @@ export default function PacientesPage() {
         if (patient) {
             setEditingPatient(patient);
             setIsDialogOpen(true);
+        }
+    }
+
+    function handleHistory(patientId: string) {
+        const patient = patients.find((p) => p.id === patientId);
+        if (patient) {
+            setHistoryPatient(patient);
+            setIsHistoryOpen(true);
         }
     }
 
@@ -205,20 +303,54 @@ export default function PacientesPage() {
         if (activeId === overId) return;
 
         const isActiveAColumn = active.data.current?.type === "Column";
-        if (!isActiveAColumn) return;
+        if (isActiveAColumn) {
+            setColumns((columns) => {
+                const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
+                const overColumnIndex = columns.findIndex((col) => col.id === overId);
 
-        console.log("DRAG END COLUMN");
+                const newColumns = [...columns];
+                const [removed] = newColumns.splice(activeColumnIndex, 1);
+                newColumns.splice(overColumnIndex, 0, removed);
+                return newColumns;
+            });
+            return;
+        }
 
-        setColumns((columns) => {
-            const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
-            const overColumnIndex = columns.findIndex((col) => col.id === overId);
+        // Handle Task Drag End - Persist to DB
+        const isActiveATask = active.data.current?.type === "Task";
+        if (isActiveATask) {
+            let newStatus = "Aguardando";
 
-            const newColumns = [...columns];
-            // Simple array move logic
-            const [removed] = newColumns.splice(activeColumnIndex, 1);
-            newColumns.splice(overColumnIndex, 0, removed);
-            return newColumns;
-        });
+            // Determine new column ID
+            // overId could be a column OR a task in a column
+            const isOverAColumn = over.data.current?.type === "Column";
+            const isOverATask = over.data.current?.type === "Task";
+
+            let targetColumnId = "aguardando";
+
+            if (isOverAColumn) {
+                targetColumnId = String(overId);
+            } else if (isOverATask) {
+                // Find the column of the task we dropped over
+                const overTask = tasks.find(t => t.id === overId);
+                if (overTask) targetColumnId = overTask.columnId;
+            }
+
+            // Map Column ID to DB Status
+            if (targetColumnId === "aguardando") newStatus = "Aguardando";
+            if (targetColumnId === "em_avaliacao") newStatus = "Em avaliação";
+            if (targetColumnId === "em_andamento") newStatus = "Em Tratamento"; // DB value
+            if (targetColumnId === "alta") newStatus = "Alta";
+
+            // Call Server Action
+            updatePatientStatus(String(active.data.current?.task?.patientId), newStatus)
+                .then(res => {
+                    if (!res.success) {
+                        console.error("Failed to update status");
+                        // Revert? For now assume success or reload.
+                    }
+                });
+        }
     }
 
     function onDragOver(event: DragOverEvent) {
@@ -326,6 +458,16 @@ export default function PacientesPage() {
                             />
                         </DialogContent>
                     </Dialog>
+
+                    {historyPatient && (
+                        <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                            <HistoryDialog
+                                patient={historyPatient}
+                                open={isHistoryOpen}
+                                onOpenChange={setIsHistoryOpen}
+                            />
+                        </Dialog>
+                    )}
                 </div>
             </div>
 
@@ -345,6 +487,8 @@ export default function PacientesPage() {
                                 key={col.id}
                                 column={col}
                                 tasks={tasks.filter((task) => task.columnId === col.id)}
+                                onEdit={(task) => handleEditPatient(task.patientId)}
+                                onHistory={(task) => handleHistory(task.patientId)}
                             />
                         ))}
                     </div>

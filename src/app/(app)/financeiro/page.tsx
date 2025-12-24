@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,8 +14,10 @@ import {
     ArrowDownRight,
     Wallet,
     Download,
-    MoreHorizontal
+    MoreHorizontal,
+    Loader2
 } from "lucide-react";
+import { getTransactions } from "@/app/actions/finance";
 import {
     Card,
     CardContent,
@@ -48,60 +50,33 @@ interface Transaction {
 }
 
 // Mock Data
-const transactions: Transaction[] = [
-    {
-        id: "t1",
-        patientName: "João Silva",
-        description: "Avaliação Inicial Completa",
-        type: "avaliacao",
-        value: 350.00,
-        status: "pago",
-        date: "20 Dez 2024",
-        dueDate: "20 Dez 2024"
-    },
-    {
-        id: "t2",
-        patientName: "Maria Santos",
-        description: "Pacote Mensal (Dezembro)",
-        type: "tratamento",
-        value: 1200.00,
-        status: "pago",
-        date: "15 Dez 2024",
-        dueDate: "15 Dez 2024"
-    },
-    {
-        id: "t3",
-        patientName: "Pedro Souza",
-        description: "Avaliação de Processamento Auditivo",
-        type: "avaliacao",
-        value: 400.00,
-        status: "pendente",
-        date: "-",
-        dueDate: "28 Dez 2024"
-    },
-    {
-        id: "t4",
-        patientName: "Ana Oliveira",
-        description: "Sessão Avulsa",
-        type: "tratamento",
-        value: 150.00,
-        status: "atrasado",
-        date: "-",
-        dueDate: "22 Dez 2024"
-    },
-    {
-        id: "t5",
-        patientName: "Lucas Lima",
-        description: "Pacote Mensal (Dezembro)",
-        type: "tratamento",
-        value: 1200.00,
-        status: "pendente",
-        date: "-",
-        dueDate: "30 Dez 2024"
-    }
-];
+// Mock Data Removed - using State
+const mockTransactions: Transaction[] = []; // keeping empty init or just use empty array in state
 
 export default function FinanceiroPage() {
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            const result = await getTransactions();
+            if (result.success && result.data) {
+                const mapped = result.data.map((t: any) => ({
+                    id: t.id,
+                    patientName: t.patient?.name || "Desconhecido",
+                    description: t.description,
+                    type: t.type as TransactionType,
+                    value: t.amount,
+                    status: t.status as TransactionStatus,
+                    date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('pt-BR') : "-",
+                    dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : "-"
+                }));
+                setTransactions(mapped);
+            }
+            setLoading(false);
+        }
+        load();
+    }, []);
     // Calculations
     const totalRevenue = transactions
         .filter(t => t.status === 'pago')
@@ -277,7 +252,6 @@ export default function FinanceiroPage() {
                     </div>
                 </div>
 
-                {/* Transaction List */}
                 <div className="overflow-hidden rounded-xl border border-red-100">
                     <div className="grid grid-cols-12 gap-4 p-4 bg-red-50/50 border-b border-red-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
                         <div className="col-span-4">Paciente / Descrição</div>
@@ -289,6 +263,16 @@ export default function FinanceiroPage() {
                     </div>
 
                     <div className="divide-y divide-red-100 bg-white/50">
+                        {loading && (
+                            <div className="p-8 flex justify-center text-red-500">
+                                <Loader2 className="animate-spin" />
+                            </div>
+                        )}
+                        {!loading && transactions.length === 0 && (
+                            <div className="p-8 text-center text-slate-500 text-sm">
+                                Nenhuma transação encontrada.
+                            </div>
+                        )}
                         {transactions.map((t) => (
                             <div key={t.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer">
                                 <div className="col-span-4">

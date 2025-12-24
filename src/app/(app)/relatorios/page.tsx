@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,99 +11,55 @@ import {
     Upload,
     MoreHorizontal,
     User,
-    FileCheck
+    FileCheck,
+    Link as LinkIcon
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-// Mock Data
-const reports = [
-    {
-        id: 1,
-        title: "Relatório sem título",
-        patient: "Paciente não encontrado",
-        type: "Avaliação",
-        status: "Finalizado",
-        date: "26 mar 2025",
-        typeColor: "bg-blue-100 text-blue-700",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 2,
-        title: "Relatório sem título",
-        patient: "Paciente não encontrado",
-        type: "Evolução",
-        status: "Rascunho",
-        date: "26 mar 2025",
-        typeColor: "bg-cyan-100 text-cyan-700",
-        statusColor: "bg-gray-100 text-gray-700"
-    },
-    {
-        id: 3,
-        title: "Relatório de Evolução Trimestral - João Silva",
-        patient: "Paciente não encontrado",
-        type: "Evolução",
-        status: "Finalizado",
-        date: "24 mar 2025",
-        typeColor: "bg-cyan-100 text-cyan-700",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 4,
-        title: "Relatório de Avaliação Inicial - João Silva",
-        patient: "Paciente não encontrado",
-        type: "Avaliação",
-        status: "Finalizado",
-        date: "24 mar 2025",
-        typeColor: "bg-blue-100 text-blue-700",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 5,
-        title: "Relatório de Avaliação Inicial - Maria Santos",
-        patient: "Paciente não encontrado",
-        type: "Avaliação",
-        status: "Finalizado",
-        date: "24 mar 2025",
-        typeColor: "bg-blue-100 text-blue-700",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 6,
-        title: "Relatório de Evolução Terapêutica - Trimestral",
-        patient: "Paciente não encontrado",
-        type: "Evolução",
-        status: "Finalizado",
-        date: "21 mar 2025",
-        typeColor: "bg-cyan-100 text-cyan-700",
-        statusColor: "bg-green-100 text-green-700"
-    },
-    {
-        id: 7,
-        title: "teste",
-        patient: "Álvaro de Lima Silva",
-        type: "Evolução",
-        status: "Rascunho",
-        date: "20 mar 2025",
-        typeColor: "bg-cyan-100 text-cyan-700",
-        statusColor: "bg-gray-100 text-gray-700"
-    },
-    {
-        id: 8,
-        title: "Relatório de Anamnese Inicial",
-        patient: "Paciente não encontrado",
-        type: "Preliminar",
-        status: "Finalizado",
-        date: "20 mar 2025",
-        typeColor: "bg-indigo-100 text-indigo-700",
-        statusColor: "bg-green-100 text-green-700"
-    }
-
-];
+import { ReportDialog } from "./_components/report-dialog";
+import { getReports } from "@/app/actions/report";
+import { getPatients } from "@/app/actions/patient";
 
 export default function RelatoriosPage() {
+    const [reports, setReports] = useState<any[]>([]);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingReport, setEditingReport] = useState<any>(undefined);
+
+    async function loadData() {
+        const [repResult, patResult] = await Promise.all([
+            getReports(),
+            getPatients()
+        ]);
+
+        if (repResult.success && repResult.data) {
+            setReports(repResult.data);
+        }
+        if (patResult.success && patResult.data) {
+            setPatients(patResult.data);
+        }
+    }
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassInput = "bg-white/50 border-red-100 focus:bg-white/80 transition-all";
+
+    const getTypeColor = (type: string) => {
+        switch (type) {
+            case 'Avaliação': return 'bg-blue-100 text-blue-700';
+            case 'Evolução': return 'bg-cyan-100 text-cyan-700';
+            default: return 'bg-purple-100 text-purple-700';
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        return status === 'Finalizado'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-gray-100 text-gray-700';
+    };
 
     return (
         <div
@@ -130,7 +87,13 @@ export default function RelatoriosPage() {
                         <Upload className="mr-2 h-4 w-4" />
                         Importar
                     </Button>
-                    <Button className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200">
+                    <Button
+                        onClick={() => {
+                            setEditingReport(undefined);
+                            setIsDialogOpen(true);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200"
+                    >
                         <Plus className="mr-2 h-4 w-4" /> Novo Relatório
                     </Button>
                 </div>
@@ -169,31 +132,46 @@ export default function RelatoriosPage() {
 
                 <div className="divide-y divide-white/40">
                     {reports.map((item) => (
-                        <div key={item.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer">
+                        <div
+                            key={item.id}
+                            className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer"
+                            onClick={() => {
+                                setEditingReport(item);
+                                setIsDialogOpen(true);
+                            }}
+                        >
                             <div className="col-span-4 flex items-center gap-3">
                                 <div className="h-8 w-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
                                     <FileText className="h-4 w-4" />
                                 </div>
-                                <span className="text-sm font-semibold text-slate-800 truncate group-hover:text-red-600 transition-colors">{item.title}</span>
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-semibold text-slate-800 truncate group-hover:text-red-600 transition-colors">{item.title}</span>
+                                    {item.fileUrl && (
+                                        <div className="flex items-center text-[10px] text-blue-500 gap-1">
+                                            <LinkIcon className="h-3 w-3" />
+                                            <span className="truncate max-w-[150px]">Link Anexado</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="col-span-3 flex items-center gap-2">
                                 <Avatar className="h-6 w-6 bg-slate-100">
-                                    <AvatarFallback><User className="h-3 w-3 text-slate-400" /></AvatarFallback>
+                                    <AvatarFallback className="text-[10px]">{item.patient?.name?.substring(0, 2).toUpperCase() || "PT"}</AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm text-slate-600 truncate">{item.patient}</span>
+                                <span className="text-sm text-slate-600 truncate">{item.patient?.name || "Paciente"}</span>
                             </div>
                             <div className="col-span-2">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${item.typeColor} bg-opacity-50`}>
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${getTypeColor(item.type)} bg-opacity-50`}>
                                     {item.type}
                                 </span>
                             </div>
                             <div className="col-span-1">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${item.statusColor} bg-opacity-50`}>
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${getStatusColor(item.status)} bg-opacity-50`}>
                                     {item.status}
                                 </span>
                             </div>
                             <div className="col-span-1 text-sm text-slate-500 font-medium">
-                                {item.date}
+                                {new Date(item.date).toLocaleDateString()}
                             </div>
                             <div className="col-span-1 flex justify-end">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
@@ -202,8 +180,21 @@ export default function RelatoriosPage() {
                             </div>
                         </div>
                     ))}
+                    {reports.length === 0 && (
+                        <div className="p-8 text-center text-slate-500">
+                            Nenhum relatório encontrado.
+                        </div>
+                    )}
                 </div>
             </div>
+
+            <ReportDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                patients={patients}
+                report={editingReport}
+                onSave={loadData}
+            />
         </div>
     )
 }

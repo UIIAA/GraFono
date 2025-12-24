@@ -16,11 +16,31 @@ import {
     Activity,
     CheckCircle,
     XCircle,
-    HeartPulse
+    HeartPulse,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { getDashboardMetrics } from "@/app/actions/dashboard";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function DashboardPage() {
+    const [metrics, setMetrics] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            setLoading(true);
+            const result = await getDashboardMetrics();
+            if (result.success) {
+                setMetrics(result.data);
+            }
+            setLoading(false);
+        }
+        load();
+    }, []);
+
     // Shared glass styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20 rounded-3xl";
     const glassPanel = "bg-white/50 backdrop-blur-sm border border-red-100 rounded-2xl";
@@ -61,25 +81,52 @@ export default function DashboardPage() {
                                 Consultas de Hoje
                             </CardTitle>
                             <span className="text-sm font-semibold text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                22 Dezembro
+                                {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
                             </span>
                         </div>
                         <CardDescription className="text-slate-500">
-                            Você tem 0 consultas agendadas para hoje.
+                            Você tem {metrics?.counts?.today || 0} consultas agendadas para hoje.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center flex-1 text-muted-foreground min-h-[400px]">
-                        <div className="relative mb-6">
-                            <div className="absolute inset-0 bg-red-400 blur-2xl opacity-20 rounded-full"></div>
-                            <div className="bg-gradient-to-br from-white to-red-50 p-8 rounded-full border border-red-100 shadow-xl relative">
-                                <CalendarIcon className="w-12 h-12 text-red-400" />
+                    <CardContent className="flex flex-col flex-1 text-muted-foreground min-h-[400px]">
+                        {loading ? (
+                            <div className="flex flex-1 items-center justify-center">
+                                <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
                             </div>
-                        </div>
-                        <p className="font-bold text-slate-800 text-lg">Dia livre!</p>
-                        <p className="text-slate-500 text-sm">Nenhuma consulta pendente para hoje.</p>
-                        <Button variant="outline" className="mt-6 border-red-200 text-red-600 hover:bg-red-50 rounded-xl">
-                            Ver Agenda Completa
-                        </Button>
+                        ) : metrics?.appointmentsToday?.length > 0 ? (
+                            <div className="space-y-4 w-full">
+                                {metrics.appointmentsToday.map((apt: any) => (
+                                    <div key={apt.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-red-100 hover:bg-white/80 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-red-100 h-10 w-10 rounded-xl flex items-center justify-center text-red-600 font-bold text-xs">
+                                                {apt.time}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800">{apt.patient?.name}</p>
+                                                <p className="text-xs text-slate-500">{apt.type}</p>
+                                            </div>
+                                        </div>
+                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                            Detalhes
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center flex-1">
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-0 bg-red-400 blur-2xl opacity-20 rounded-full"></div>
+                                    <div className="bg-gradient-to-br from-white to-red-50 p-8 rounded-full border border-red-100 shadow-xl relative">
+                                        <CalendarIcon className="w-12 h-12 text-red-400" />
+                                    </div>
+                                </div>
+                                <p className="font-bold text-slate-800 text-lg">Dia livre!</p>
+                                <p className="text-slate-500 text-sm">Nenhuma consulta pendente para hoje.</p>
+                                <Button variant="outline" className="mt-6 border-red-200 text-red-600 hover:bg-red-50 rounded-xl">
+                                    <Link href="/agenda">Ver Agenda Completa</Link>
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -133,24 +180,32 @@ export default function DashboardPage() {
                     </Card>
 
                     {/* Próximo Paciente Highlight */}
-                    <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <HeartPulse className="w-24 h-24" />
-                        </div>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Amanhã, 09:00</p>
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-                                <User className="text-white h-6 w-6" />
+                    {metrics?.nextAppointment ? (
+                        <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <HeartPulse className="w-24 h-24" />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-bold">Ana Oliveira</h3>
-                                <p className="text-slate-400 text-sm">Fonoaudiologia Infantil</p>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">
+                                {new Date(metrics.nextAppointment.date).toLocaleDateString('pt-BR', { weekday: 'long' })}, {metrics.nextAppointment.time}
+                            </p>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
+                                    <User className="text-white h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold">{metrics.nextAppointment.patient?.name}</h3>
+                                    <p className="text-slate-400 text-sm">{metrics.nextAppointment.type}</p>
+                                </div>
                             </div>
+                            <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold">
+                                Ver Detalhes
+                            </Button>
                         </div>
-                        <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold">
-                            Ver Detalhes
-                        </Button>
-                    </div>
+                    ) : (
+                        <div className="rounded-3xl bg-slate-100 p-6 text-slate-500 shadow-inner flex flex-col items-center justify-center text-center">
+                            <p className="text-sm">Sem próximos atendimentos</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

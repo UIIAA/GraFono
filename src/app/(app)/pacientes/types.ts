@@ -4,8 +4,14 @@ export type Patient = {
     email: string;
     phone: string;
     status: string;
-    history: any[];
+    history: PatientHistoryEntry[];
     negotiatedValue?: number;
+};
+
+export type PatientHistoryEntry = {
+    id: string;
+    content: string;
+    date: Date | string;
 };
 
 export type Column = {
