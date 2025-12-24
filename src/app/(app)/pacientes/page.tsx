@@ -58,7 +58,7 @@ const defaultCols: Column[] = [
     },
     {
         id: "em_avaliacao",
-        title: "Avaliação",
+        title: "Em avaliação",
     },
     {
         id: "em_andamento",

@@ -5,6 +5,7 @@ export type Patient = {
     phone: string;
     status: string;
     history: any[];
+    negotiatedValue?: number;
 };
 
 export type Column = {

@@ -43,6 +43,7 @@ export function PatientDialog({
         motherName: patient?.motherName || "",
         fatherName: patient?.fatherName || "",
         observations: patient?.observations || "",
+        negotiatedValue: patient?.negotiatedValue || "",
     });
 
     // Mock history state - in a real app this would come from the patient object or an API
@@ -64,6 +65,7 @@ export function PatientDialog({
                 motherName: patient?.motherName || "",
                 fatherName: patient?.fatherName || "",
                 observations: patient?.observations || "",
+                negotiatedValue: patient?.negotiatedValue || "",
             });
             setHistory(patient?.history || [
                 { id: 1, date: "23/12/2024", type: "Contato", description: "Entrou em contato via WhatsApp interessado em terapia." },
@@ -170,6 +172,20 @@ export function PatientDialog({
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-red-500 font-semibold">Valor Negociado (Mensal/Sessão)</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">R$</span>
+                                    <Input
+                                        type="number"
+                                        placeholder="0,00"
+                                        className="pl-8 border-red-200 focus:border-red-400"
+                                        value={formData.negotiatedValue}
+                                        onChange={(e) => setFormData({ ...formData, negotiatedValue: Number(e.target.value) })}
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
