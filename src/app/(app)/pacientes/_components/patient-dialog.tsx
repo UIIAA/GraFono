@@ -19,13 +19,20 @@ import { Clock, Plus, User } from "lucide-react";
 export function PatientDialog({
     children,
     patient,
-    onSave
+    onSave,
+    open: externalOpen,
+    onOpenChange
 }: {
-    children: React.ReactNode,
+    children?: React.ReactNode,
     patient?: any,
-    onSave?: (data: any) => void
+    onSave?: (data: any) => void,
+    open?: boolean,
+    onOpenChange?: (open: boolean) => void
 }) {
-    const [open, setOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = externalOpen !== undefined;
+    const open = isControlled ? externalOpen : internalOpen;
+    const setOpen = isControlled ? onOpenChange : setInternalOpen;
     const [activeTab, setActiveTab] = useState("cadastro");
     const [formData, setFormData] = useState({
         name: patient?.name || "",
@@ -73,7 +80,7 @@ export function PatientDialog({
                 history
             });
         }
-        setOpen(false);
+        if (setOpen) setOpen(false);
     };
 
     const handleAddNote = () => {

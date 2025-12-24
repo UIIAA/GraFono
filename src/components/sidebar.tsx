@@ -17,7 +17,8 @@ import {
   LogOut,
   Brain,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Wallet
 } from "lucide-react";
 
 export function Sidebar() {
@@ -71,6 +72,12 @@ export function Sidebar() {
       label: "Modelos",
       icon: LayoutTemplate,
       href: "/modelos",
+    },
+    {
+      label: "Financeiro",
+      icon: Wallet,
+      href: "/financeiro",
+      color: "text-red-500",
     }
   ];
 
