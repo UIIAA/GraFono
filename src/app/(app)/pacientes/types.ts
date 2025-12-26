@@ -6,6 +6,10 @@ export type Patient = {
     status: string;
     history: PatientHistoryEntry[];
     negotiatedValue?: number;
+    financialSource?: string;
+    insuranceName?: string;
+    insuranceNumber?: string;
+    authorizationStatus?: string;
 };
 
 export type PatientHistoryEntry = {
@@ -23,6 +27,8 @@ export type Task = {
     id: string;
     columnId: string;
     content: string;
+    financialSource?: string;
     patientId: string;
     tags: string[];
+    nextReevaluation?: Date | string;
 };

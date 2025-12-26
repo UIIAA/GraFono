@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { addMonths } from "date-fns";
 
 export async function getAssessments() {
     try {
@@ -64,7 +65,35 @@ export async function saveAssessment(data: any) {
             }
         });
 
+        // Update Patient Reevaluation Dates
+        const patient = await db.patient.findUnique({ where: { id: assessment.patientId } });
+        if (patient) {
+            let nextReevaluation = null;
+            if (patient.reevaluationInterval && patient.reevaluationInterval !== "NONE") {
+                const intervalMap: Record<string, number> = {
+                    "3_MONTHS": 3,
+                    "6_MONTHS": 6,
+                    "1_YEAR": 12
+                };
+                const months = intervalMap[patient.reevaluationInterval] || 0;
+                if (months > 0) {
+                    const baseline = new Date(assessment.date);
+                    // addMonths from date-fns handles "Jan 31 + 1 month = Feb 28" correctly
+                    nextReevaluation = addMonths(baseline, months);
+                }
+            }
+
+            await db.patient.update({
+                where: { id: patient.id },
+                data: {
+                    lastReevaluation: assessment.date,
+                    nextReevaluation: nextReevaluation
+                }
+            });
+        }
+
         revalidatePath("/avaliacoes");
+        revalidatePath("/pacientes"); // Revalidate patient list for Kanban flags
         return { success: true };
     } catch (error) {
         console.error("Error saving assessment:", error);

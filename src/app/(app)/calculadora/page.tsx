@@ -21,8 +21,10 @@ import {
     CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CalculadoraPage() {
+    const { toast } = useToast();
     const [severity, setSeverity] = useState([5]);
     const [complexity, setComplexity] = useState([3]);
     const [frequency, setFrequency] = useState("1");
@@ -36,6 +38,14 @@ export default function CalculadoraPage() {
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassPanel = "bg-white/50 backdrop-blur-sm border border-red-100 rounded-2xl";
     const glassInput = "bg-white/50 border-red-100 focus:bg-white/80 transition-all";
+
+    const handleFeatureNotImplemented = () => {
+        toast({
+            title: "Em breve",
+            description: "Esta funcionalidade estará disponível na próxima atualização.",
+            variant: "default",
+        });
+    };
 
     return (
         <div
@@ -213,7 +223,7 @@ export default function CalculadoraPage() {
                                 </div>
                             </div>
 
-                            <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold rounded-xl h-11">
+                            <Button onClick={handleFeatureNotImplemented} className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold rounded-xl h-11">
                                 Gerar Proposta PDF <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </CardContent>
@@ -230,7 +240,7 @@ export default function CalculadoraPage() {
                                     <p className="text-xs text-slate-500">Baseado em 1.2k casos</p>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" className="text-xs text-red-500 font-bold">Ver Insights</Button>
+                            <Button onClick={handleFeatureNotImplemented} variant="ghost" size="sm" className="text-xs text-red-500 font-bold">Ver Insights</Button>
                         </CardContent>
                     </Card>
                 </div>

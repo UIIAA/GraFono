@@ -51,6 +51,7 @@ import {
 
 import { BoardColumn } from "./_components/board-column";
 import { TaskCard } from "./_components/task-card";
+import { PatientMobileCard } from "./_components/patient-mobile-card";
 import { PatientDialog } from "./_components/patient-dialog";
 import { HistoryDialog } from "./_components/history-dialog";
 import { Column, Task, Patient } from "./types";
@@ -76,7 +77,12 @@ const defaultCols: Column[] = [
 
 
 
+import { useSearchParams } from "next/navigation";
+
 export default function PacientesPage() {
+    const searchParams = useSearchParams();
+    const shouldOpenNew = searchParams.get("new") === "true";
+
     // State
     const [columns, setColumns] = useState<Column[]>(defaultCols);
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -144,6 +150,7 @@ export default function PacientesPage() {
                     observations: p.observations,
                     address: p.address,
                     dob: p.dateOfBirth,
+                    financialSource: p.financialSource, // Mapped
                 }));
                 setPatients(dbPatients);
 
@@ -159,7 +166,9 @@ export default function PacientesPage() {
                         columnId: colId,
                         content: p.name,
                         patientId: p.id,
-                        tags: [p.status],
+                        tags: [p.gender === "Masculino" ? "Masculino" : "Feminino"], // Example tags
+                        nextReevaluation: p.nextReevaluation,
+                        financialSource: p.financialSource,
                     };
                 });
                 setTasks(dbTasks);
@@ -167,6 +176,12 @@ export default function PacientesPage() {
         }
         loadPatients();
     }, []);
+
+    useEffect(() => {
+        if (shouldOpenNew) {
+            setIsDialogOpen(true);
+        }
+    }, [shouldOpenNew]);
 
     // Dnd State
     const [activeColumn, setActiveColumn] = useState<Column | null>(null);
@@ -405,13 +420,23 @@ export default function PacientesPage() {
         }
     }
 
+    // Media Query Hook equivalent (simpler implementation for now)
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // Styles for Glass Effect - UPDATED RED
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassInput = "bg-white/50 border-red-100 focus:bg-white/80 transition-all";
 
     return (
         <div
-            className="min-h-screen p-8 flex flex-col relative overflow-hidden font-sans"
+            className="min-h-screen p-4 md:p-8 flex flex-col relative overflow-hidden font-sans"
             style={{
                 background: "linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%)"
             }}
@@ -421,9 +446,9 @@ export default function PacientesPage() {
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-rose-400/10 to-red-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             {/* Header */}
-            <div className={`flex justify-between items-center mb-8 p-6 rounded-3xl ${glassCard} relative z-10`}>
-                <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200">
+            <div className={`flex flex-col md:flex-row justify-between items-center mb-8 p-6 rounded-3xl ${glassCard} relative z-10 gap-4`}>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200 shrink-0">
                         <User className="h-6 w-6" />
                     </div>
                     <div>
@@ -432,16 +457,16 @@ export default function PacientesPage() {
                     </div>
                 </div>
 
-                <div className="flex gap-3">
-                    <div className="relative group">
+                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <div className="relative group w-full md:w-auto">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-400 group-focus-within:text-red-600 transition-colors" />
                         <Input
                             placeholder="Buscar paciente..."
-                            className={`pl-10 w-64 rounded-xl ${glassInput}`}
+                            className={`pl-10 w-full md:w-64 rounded-xl ${glassInput}`}
                         />
                     </div>
                     <Button
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 transition-all hover:scale-105"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 transition-all hover:scale-105 w-full md:w-auto"
                         onClick={() => {
                             setEditingPatient(undefined);
                             setIsDialogOpen(true);
@@ -449,15 +474,13 @@ export default function PacientesPage() {
                     >
                         <Plus className="mr-2 h-4 w-4" /> Novo Paciente
                     </Button>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogContent className="sm:max-w-[425px] bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl shadow-2xl">
-                            <PatientDialog
-                                patient={editingPatient}
-                                onSave={handleSavePatient}
-                                open={isDialogOpen}
-                            />
-                        </DialogContent>
-                    </Dialog>
+
+                    <PatientDialog
+                        patient={editingPatient}
+                        onSave={handleSavePatient}
+                        open={isDialogOpen}
+                        onOpenChange={setIsDialogOpen}
+                    />
 
                     {historyPatient && (
                         <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
@@ -471,51 +494,70 @@ export default function PacientesPage() {
                 </div>
             </div>
 
-            {/* Kanban Board */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden relative z-10">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={pointerWithin} // Using pointerWithin for better column detection
-                    onDragStart={onDragStart}
-                    onDragOver={onDragOver}
-                    onDragEnd={onDragEnd}
-                    id="kanban-dnd-context"
-                >
-                    <div className="flex gap-6 h-full min-w-full pb-4">
-                        {columns.map((col) => (
-                            <BoardColumn
-                                key={col.id}
-                                column={col}
-                                tasks={tasks.filter((task) => task.columnId === col.id)}
-                                onEdit={(task) => handleEditPatient(task.patientId)}
-                                onHistory={(task) => handleHistory(task.patientId)}
+            {/* Content Switch: Kanban (Desktop) vs List (Mobile) */}
+            {isMobile ? (
+                <div className="relative z-10 space-y-4 pb-20">
+                    {/* Mobile View: Simple List of Cards (Active Only for now, or Filtered?) */}
+                    {/* For simplicity, we just list all non-archived patients */}
+                    {tasks.filter(t => t.columnId !== 'alta').map(task => { // Filter out archived/alta?
+                        const patient = patients.find(p => p.id === task.patientId);
+                        if (!patient) return null;
+                        return (
+                            <PatientMobileCard
+                                key={task.id}
+                                patient={patient}
+                                onEdit={handleEditPatient}
+                                onHistory={handleHistory}
                             />
-                        ))}
-                    </div>
-
-                    {typeof window !== "undefined" && (
-                        <DragOverlay
-                            dropAnimation={{
-                                sideEffects: defaultDropAnimationSideEffects({
-                                    styles: {
-                                        active: {
-                                            opacity: "0.5",
-                                        },
-                                    },
-                                }),
-                            }}
-                        >
-                            {activeTask && (
-                                <TaskCard
-                                    task={activeTask}
-                                    patientName={activeTask.content}
-                                    className="rotate-2 scale-105 shadow-2xl ring-2 ring-red-500 ring-offset-2"
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="flex-1 overflow-x-auto overflow-y-hidden relative z-10">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={pointerWithin}
+                        onDragStart={onDragStart}
+                        onDragOver={onDragOver}
+                        onDragEnd={onDragEnd}
+                        id="kanban-dnd-context"
+                    >
+                        <div className="flex gap-6 h-full min-w-full pb-4">
+                            {columns.map((col) => (
+                                <BoardColumn
+                                    key={col.id}
+                                    column={col}
+                                    tasks={tasks.filter((task) => task.columnId === col.id)}
+                                    onEdit={(task) => handleEditPatient(task.patientId)}
+                                    onHistory={(task) => handleHistory(task.patientId)}
                                 />
-                            )}
-                        </DragOverlay>
-                    )}
-                </DndContext>
-            </div>
+                            ))}
+                        </div>
+
+                        {typeof window !== "undefined" && (
+                            <DragOverlay
+                                dropAnimation={{
+                                    sideEffects: defaultDropAnimationSideEffects({
+                                        styles: {
+                                            active: {
+                                                opacity: "0.5",
+                                            },
+                                        },
+                                    }),
+                                }}
+                            >
+                                {activeTask && (
+                                    <TaskCard
+                                        task={activeTask}
+                                        patientName={activeTask.content}
+                                        className="rotate-2 scale-105 shadow-2xl ring-2 ring-red-500 ring-offset-2"
+                                    />
+                                )}
+                            </DragOverlay>
+                        )}
+                    </DndContext>
+                </div>
+            )}
         </div>
     );
 }

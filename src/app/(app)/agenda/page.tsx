@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getAppointments } from "@/app/actions/appointment";
 import { getPatients } from "@/app/actions/patient";
 import { NewAppointmentDialog } from "./_components/new-appointment-dialog";
+import { ConfirmationAssistant } from "./_components/confirmation-assistant";
+import { CheckCircle } from "lucide-react";
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 to 19:00
 
@@ -26,10 +28,14 @@ const DAYS = [
     { name: "Sab", full: "Sábado", date: 27 },
 ];
 
+import { useSearchParams } from "next/navigation";
+
 export default function AgendaPage() {
+    const searchParams = useSearchParams();
     const [appointments, setAppointments] = useState<any[]>([]);
     const [patients, setPatients] = useState<any[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isAssistantOpen, setIsAssistantOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | undefined>(undefined);
 
     async function loadData() {
@@ -45,9 +51,66 @@ export default function AgendaPage() {
         }
     }
 
+    const [presetPatientId, setPresetPatientId] = useState<string | undefined>(undefined);
+    const [presetType, setPresetType] = useState<string | undefined>(undefined);
+
     useEffect(() => {
         loadData();
-    }, []);
+
+        // Check for URL params to auto-open dialog
+        const isNew = searchParams.get("new");
+        const patientId = searchParams.get("patientId");
+        const type = searchParams.get("type");
+
+        if (isNew === "true") {
+            if (patientId) {
+                setPresetPatientId(patientId);
+
+                // Smart Slot Logic: Try to find a pattern in existing appointments
+                // We rely on 'appointments' being loaded. If it's empty initially, this might run before data.
+                // So checking `appointments.length` might be needed or we rely on re-renders.
+                // Better approach: Calculate this when `appointments` changes IF we have a presetPatientId.
+            }
+            if (type) setPresetType(type);
+            setIsDialogOpen(true);
+        }
+    }, [searchParams]);
+
+    // Secondary Effect: Once appointments are loaded and we have a presetPatientId, try to predict the slot
+    useEffect(() => {
+        if (presetPatientId && appointments.length > 0 && !selectedSlot) {
+            const patientAppts = appointments.filter(a => a.patientId === presetPatientId);
+
+            if (patientAppts.length > 0) {
+                // Sort by date desc
+                patientAppts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                const lastAppt = patientAppts[0];
+                const lastDate = new Date(lastAppt.date);
+
+                // Simple logic: Same time, next occurrence of the same weekday
+                // E.g. Last was Monday 14:00 at Dec 10. We want Monday 14:00 after Today.
+
+                const targetDayOfWeek = lastDate.getDay(); // 0-6
+                const targetTime = lastAppt.time || "08:00";
+
+                let nextDate = new Date(); // Start from today
+
+                // Advance until we match the day of week
+                while (nextDate.getDay() !== targetDayOfWeek || nextDate < new Date()) {
+                    nextDate.setDate(nextDate.getDate() + 1);
+                }
+
+                // If it's today but the time has passed? Assume we book for future dates generally.
+                // Let's just default to that calculated date.
+
+                setSelectedSlot({
+                    date: nextDate,
+                    time: targetTime
+                });
+            }
+        }
+    }, [presetPatientId, appointments, selectedSlot]);
 
     // Helper to position events
     const getEventStyle = (apt: any) => {
@@ -151,9 +214,18 @@ export default function AgendaPage() {
                     </Button>
                 </div>
 
-                <Button variant="outline" className={`${glassButton} border-dashed`}>
-                    <Filter className="mr-2 h-3 w-3" /> Filtros
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        className={`${glassButton} border-dashed text-green-600 border-green-200 hover:bg-green-50`}
+                        onClick={() => setIsAssistantOpen(true)}
+                    >
+                        <CheckCircle className="mr-2 h-3 w-3" /> Confirmar
+                    </Button>
+                    <Button variant="outline" className={`${glassButton} border-dashed`}>
+                        <Filter className="mr-2 h-3 w-3" /> Filtros
+                    </Button>
+                </div>
             </div>
 
             {/* Calendar Grid */}
@@ -240,7 +312,15 @@ export default function AgendaPage() {
                 patients={patients}
                 initialDate={selectedSlot?.date}
                 initialTime={selectedSlot?.time}
+                initialPatientId={presetPatientId}
+                initialType={presetType}
                 onSave={loadData}
+            />
+
+            <ConfirmationAssistant
+                open={isAssistantOpen}
+                onOpenChange={setIsAssistantOpen}
+                appointments={appointments}
             />
         </div>
     )

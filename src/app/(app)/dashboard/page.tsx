@@ -17,19 +17,33 @@ import {
     CheckCircle,
     XCircle,
     HeartPulse,
-    Loader2
+    Loader2,
+    AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getDashboardMetrics } from "@/app/actions/dashboard";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [weekDays, setWeekDays] = useState<Date[]>([]);
 
     useEffect(() => {
+        // Generate next 7 days
+        const days: Date[] = [];
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            days.push(date);
+        }
+        setWeekDays(days);
+
         async function load() {
             setLoading(true);
             const result = await getDashboardMetrics();
@@ -40,6 +54,14 @@ export default function DashboardPage() {
         }
         load();
     }, []);
+
+    // Filter appointments for selected date
+    const filteredAppointments = metrics?.weekAppointments?.filter((apt: any) => {
+        const aptDate = new Date(apt.date);
+        return aptDate.getDate() === selectedDate.getDate() &&
+            aptDate.getMonth() === selectedDate.getMonth() &&
+            aptDate.getFullYear() === selectedDate.getFullYear();
+    }) || [];
 
     // Shared glass styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20 rounded-3xl";
@@ -66,26 +88,26 @@ export default function DashboardPage() {
                         <p className="text-slate-500 font-medium">Bem-vindo(a) de volta, Marcos.</p>
                     </div>
                 </div>
-                <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-xl shadow-lg shadow-red-200 border-0 h-11 px-6 font-semibold transition-all hover:scale-[1.02]">
-                    + Novo Paciente
-                </Button>
+                <Link href="/pacientes?new=true">
+                    <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-xl shadow-lg shadow-red-200 border-0 h-11 px-6 font-semibold transition-all hover:scale-[1.02]">
+                        + Novo Paciente
+                    </Button>
+                </Link>
             </div>
 
             <div className="relative z-10 grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-                {/* Coluna Esquerda: Consultas de Hoje */}
+                {/* Coluna Esquerda: Consultas por Data */}
                 <Card className={`lg:col-span-2 flex flex-col ${glassCard} border-0`}>
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle className="flex items-center gap-2 text-xl text-slate-800">
                                 <Clock className="w-5 h-5 text-red-500" />
-                                Consultas de Hoje
+                                Consultas de {selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
                             </CardTitle>
-                            <span className="text-sm font-semibold text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-                                {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
-                            </span>
+                            {/* Removed redundant date badge since title now has date */}
                         </div>
                         <CardDescription className="text-slate-500">
-                            Você tem {metrics?.counts?.today || 0} consultas agendadas para hoje.
+                            Você tem {filteredAppointments.length} consultas agendadas para esta data.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col flex-1 text-muted-foreground min-h-[400px]">
@@ -93,9 +115,9 @@ export default function DashboardPage() {
                             <div className="flex flex-1 items-center justify-center">
                                 <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
                             </div>
-                        ) : metrics?.appointmentsToday?.length > 0 ? (
+                        ) : filteredAppointments.length > 0 ? (
                             <div className="space-y-4 w-full">
-                                {metrics.appointmentsToday.map((apt: any) => (
+                                {filteredAppointments.map((apt: any) => (
                                     <div key={apt.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-red-100 hover:bg-white/80 transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="bg-red-100 h-10 w-10 rounded-xl flex items-center justify-center text-red-600 font-bold text-xs">
@@ -106,9 +128,11 @@ export default function DashboardPage() {
                                                 <p className="text-xs text-slate-500">{apt.type}</p>
                                             </div>
                                         </div>
-                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                            Detalhes
-                                        </Button>
+                                        <Link href="/agenda">
+                                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                Detalhes
+                                            </Button>
+                                        </Link>
                                     </div>
                                 ))}
                             </div>
@@ -121,7 +145,7 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                                 <p className="font-bold text-slate-800 text-lg">Dia livre!</p>
-                                <p className="text-slate-500 text-sm">Nenhuma consulta pendente para hoje.</p>
+                                <p className="text-slate-500 text-sm">Nenhuma consulta para este dia.</p>
                                 <Button variant="outline" className="mt-6 border-red-200 text-red-600 hover:bg-red-50 rounded-xl">
                                     <Link href="/agenda">Ver Agenda Completa</Link>
                                 </Button>
@@ -130,7 +154,7 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Coluna Direita: Notificações, Agenda, Amanhã */}
+                {/* Coluna Direita: Notificações, Agenda, Próximo */}
                 <div className="space-y-6 flex flex-col">
                     {/* Notificações */}
                     <Card className={`${glassCard} border-0`}>
@@ -145,36 +169,89 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="space-y-3 pt-4">
                             {[
-                                { title: "Pagamento Recebido", desc: "R$ 150,00 - Maria Silva", icon: CheckCircle, color: "text-green-500", bg: "bg-green-50" },
-                                { title: "Sessão Confirmada", desc: "João Silva - 14:00", icon: CheckCircle, color: "text-blue-500", bg: "bg-blue-50" },
-                                { title: "Sessão Cancelada", desc: "Ana Oliveira - Amanhã", icon: XCircle, color: "text-red-500", bg: "bg-red-50" }
+                                { title: "Pagamento Recebido", desc: "R$ 150,00 - Maria Silva", icon: CheckCircle, color: "text-green-500", bg: "bg-green-50", link: "/financeiro" },
+                                { title: "Sessão Confirmada", desc: "João Silva - 14:00", icon: CheckCircle, color: "text-blue-500", bg: "bg-blue-50", link: "/agenda" },
+                                { title: "Sessão Cancelada", desc: "Ana Oliveira - Amanhã", icon: XCircle, color: "text-red-500", bg: "bg-red-50", link: "/agenda" }
                             ].map((item, i) => (
-                                <div key={i} className={`${glassPanel} p-3 flex justify-between items-start hover:bg-white/50 transition-colors cursor-pointer group`}>
-                                    <div>
-                                        <h4 className={`text-sm font-bold flex items-center gap-2 ${item.color}`}>
-                                            <item.icon className="w-3.5 h-3.5" /> {item.title}
-                                        </h4>
-                                        <p className="text-xs text-slate-600 mt-1 font-medium">{item.desc}</p>
+                                <Link href={item.link} key={i}>
+                                    <div className={`${glassPanel} p-3 flex justify-between items-start hover:bg-white/50 transition-colors cursor-pointer group mb-2`}>
+                                        <div>
+                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${item.color}`}>
+                                                <item.icon className="w-3.5 h-3.5" /> {item.title}
+                                            </h4>
+                                            <p className="text-xs text-slate-600 mt-1 font-medium">{item.desc}</p>
+                                        </div>
+                                        <div className={`h-2 w-2 rounded-full ${item.color.replace('text', 'bg')} mt-1`} />
                                     </div>
-                                    <div className={`h-2 w-2 rounded-full ${item.color.replace('text', 'bg')} mt-1`} />
-                                </div>
+                                </Link>
                             ))}
                         </CardContent>
                     </Card>
 
-                    {/* Agenda da Semana */}
+                    {/* Alertas de Reavaliação (Critical) */}
+                    {metrics?.reevaluationAlerts?.length > 0 && (
+                        <Card className={`${glassCard} border-red-200 border-2 shadow-red-100`}>
+                            <CardHeader className="pb-3 border-b border-white/50 bg-red-50/50 rounded-t-3xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="w-5 h-5 text-red-600 animate-pulse" />
+                                        <CardTitle className="text-base text-red-700">Ciclo de Reavaliação</CardTitle>
+                                    </div>
+                                    <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{metrics.reevaluationAlerts.length}</span>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                {metrics.reevaluationAlerts.map((patient: any, i: number) => {
+                                    const isLate = new Date(patient.nextReevaluation) < new Date();
+                                    const daysLeft = Math.ceil((new Date(patient.nextReevaluation).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+                                    return (
+                                        <div key={i} className={`p-3 rounded-xl border ${isLate ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-100'} flex justify-between items-center`}>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-slate-800">{patient.name}</h4>
+                                                <p className={`text-xs font-semibold ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
+                                                    {isLate ? `Atrasado ${Math.abs(daysLeft)} dias` : `Vence em ${daysLeft} dias`}
+                                                </p>
+                                            </div>
+                                            <Link href={`/agenda?new=true&patientId=${patient.id}&type=Sessão de Devolutiva`}>
+                                                <Button size="sm" variant="outline" className="h-7 text-xs bg-white border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800">
+                                                    Agendar
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Agenda da Semana (Interactive) */}
                     <Card className={`${glassCard} border-0`}>
                         <CardHeader className="pb-3 border-b border-white/50">
-                            <CardTitle className="text-base text-slate-800">Semana</CardTitle>
+                            <CardTitle className="text-base text-slate-800">Próximos Dias</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4">
-                            <div className="flex justify-between gap-1">
-                                {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((day, i) => (
-                                    <div key={i} className={`flex flex-col items-center justify-center p-2 rounded-xl flex-1 transition-all ${i === 0 ? 'bg-red-500 text-white shadow-lg shadow-red-200 scale-105' : 'hover:bg-white/60 text-slate-500'}`}>
-                                        <span className="text-[10px] font-bold uppercase mb-1 opacity-80">{day}</span>
-                                        <span className="text-sm font-bold">{22 + i}</span>
-                                    </div>
-                                ))}
+                            <div className="flex justify-between gap-1 overflow-x-auto">
+                                {weekDays.map((day, i) => {
+                                    const isSelected = selectedDate.getDate() === day.getDate() && selectedDate.getMonth() === day.getMonth();
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => setSelectedDate(day)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-2 rounded-xl flex-1 transition-all cursor-pointer min-w-[36px]",
+                                                isSelected
+                                                    ? 'bg-red-500 text-white shadow-lg shadow-red-200 scale-105'
+                                                    : 'hover:bg-white/60 text-slate-500'
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-bold uppercase mb-1 opacity-80">
+                                                {day.toLocaleDateString('pt-BR', { weekday: 'narrow' }).slice(0, 1)}
+                                            </span>
+                                            <span className="text-sm font-bold">{day.getDate()}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </CardContent>
                     </Card>
@@ -197,9 +274,11 @@ export default function DashboardPage() {
                                     <p className="text-slate-400 text-sm">{metrics.nextAppointment.type}</p>
                                 </div>
                             </div>
-                            <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold">
-                                Ver Detalhes
-                            </Button>
+                            <Link href="/agenda">
+                                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold">
+                                    Ver Detalhes
+                                </Button>
+                            </Link>
                         </div>
                     ) : (
                         <div className="rounded-3xl bg-slate-100 p-6 text-slate-500 shadow-inner flex flex-col items-center justify-center text-center">
@@ -208,6 +287,6 @@ export default function DashboardPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

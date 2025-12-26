@@ -45,6 +45,18 @@ model Patient {
   observations  String?   // Notes/Observations
   negotiatedValue Float?  // Valor negociado mensal/sessão
   
+  // Financial Specifics
+  financialSource   String    @default("PARTICULAR") // PARTICULAR, CONVENIO
+  insuranceName     String?
+  insuranceNumber   String?
+  authorizationStatus String? // Guia Pendente, Guia Autorizada
+  
+  // Reevaluation Cycle
+  reevaluationInterval String?   // 3_MONTHS, 6_MONTHS, 1_YEAR, NONE
+  lastReevaluation     DateTime?
+  nextReevaluation     DateTime?
+  responsibleEmail     String?
+
   // Relations
   userId        String?   @unique // Link to a User account for Portal access
   user          User?     @relation(name: "UserToPatient", fields: [userId], references: [id])
@@ -59,6 +71,7 @@ model Patient {
   transactions  Transaction[]
   history       PatientHistory[]
   knowledgeBase PatientKnowledgeBase[]
+  evolutions    Evolution[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -79,13 +92,24 @@ model Transaction {
   id          String   @id @default(cuid())
   description String
   amount      Float
-  type        String   // avaliacao, tratamento
-  status      String   // pago, pendente, atrasado
+  type        String   // Old: avaliacao, tratamento. New: INCOME, EXPENSE? 
+  // Let's keep 'type' for categorization like "Terapia", "Avaliação" for Incomes, or "Aluguel" for Expenses.
+  
+  flow        String   @default("INCOME") // INCOME, EXPENSE
+  category    String?  // FIXED (Fixa), VARIABLE (Variável) - mostly for Expenses
+  source      String?  // PARTICULAR, CONVENIO - mostly for Income
+  
+  status      String   // pago, pendente, atrasado, aguardando_repasse
   dueDate     DateTime
-  paymentDate DateTime?
+  paymentDate DateTime? // Used for "Single Click" settlement timestamp
 
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  // Compliance List Fields
+  referenceId       String?  // e.g. "MONTHLY_JAN_2025" or "APT_123"
+  isMonthly         Boolean  @default(false)
+  bankTransactionId String?  // For future bank integration
+
+  patientId   String?
+  patient     Patient? @relation(fields: [patientId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -121,6 +145,22 @@ model Report {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Evolution {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  type            String   // PARTICULAR, CONVENIO (Inherited or overridden)
+  emotionalStatus String?  // Colaborativo, Resistente, Agitado, etc.
+  content         String   // Rich Text / Speech-to-Text content
+  fileUrl         String?  // Attachments
+  
+  // Relations
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Assessment {

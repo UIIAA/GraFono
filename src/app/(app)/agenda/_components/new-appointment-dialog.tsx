@@ -26,6 +26,8 @@ interface NewAppointmentDialogProps {
     patients: Patient[];
     initialDate?: Date;
     initialTime?: string;
+    initialPatientId?: string;
+    initialType?: string;
     onSave: () => void;
 }
 
@@ -35,6 +37,8 @@ export function NewAppointmentDialog({
     patients,
     initialDate,
     initialTime,
+    initialPatientId,
+    initialType,
     onSave
 }: NewAppointmentDialogProps) {
     const [patientId, setPatientId] = useState("");
@@ -56,11 +60,12 @@ export function NewAppointmentDialog({
             } else {
                 setTime("08:00");
             }
-            setPatientId("");
-            setType("Avaliação");
+
+            setPatientId(initialPatientId || "");
+            setType(initialType || "Avaliação");
             setNotes("");
         }
-    }, [open, initialDate, initialTime]);
+    }, [open, initialDate, initialTime, initialPatientId, initialType]);
 
     async function handleSave() {
         if (!patientId || !date || !time) return;
@@ -130,6 +135,7 @@ export function NewAppointmentDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Avaliação">Avaliação</SelectItem>
+                                <SelectItem value="Sessão de Devolutiva">Sessão de Devolutiva</SelectItem>
                                 <SelectItem value="Terapia">Terapia</SelectItem>
                                 <SelectItem value="Exame">Exame</SelectItem>
                                 <SelectItem value="Outro">Outro</SelectItem>
