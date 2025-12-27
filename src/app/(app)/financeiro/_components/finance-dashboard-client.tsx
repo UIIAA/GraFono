@@ -41,9 +41,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FinanceDialog } from "./finance-dialog";
-import { AvailabilityDialog } from "./availability-dialog";
+import { AvailabilityDialog } from "@/components/availability-dialog";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
+import { getFinancialMetrics } from "@/app/actions/finance";
 
 export default function FinanceDashboardClient({ initialMetrics, initialTransactions, patients }: any) {
     const { toast } = useToast();
@@ -59,8 +65,29 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
         efficiency: {
             avgTicket: 0,
             occupancyRate: 0
+        },
+        delta: {
+            income: 0,
+            expenses: 0
         }
     });
+
+    const [date, setDate] = useState<DateRange | undefined>({
+        from: startOfMonth(new Date()),
+        to: endOfMonth(new Date()),
+    });
+
+    useEffect(() => {
+        async function loadMetrics() {
+            if (date?.from && date?.to) {
+                const res = await getFinancialMetrics({ from: date.from, to: date.to });
+                if (res.success && res.data) {
+                    setMetrics(res.data);
+                }
+            }
+        }
+        loadMetrics();
+    }, [date]);
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 }).format(val / 100);
@@ -133,34 +160,68 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                         <p className="text-slate-500">Visão completa de fluxo e performance.</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    {/* Date Picker */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                    "w-[260px] justify-start text-left font-normal bg-white/80 border-red-100 h-11",
+                                    !date && "text-muted-foreground"
+                                )}
+                            >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {date?.from ? (
+                                    date.to ? (
+                                        <>
+                                            {format(date.from, "dd/MM", { locale: ptBR })} -{" "}
+                                            {format(date.to, "dd/MM", { locale: ptBR })}
+                                        </>
+                                    ) : (
+                                        format(date.from, "dd/MM/yyyy", { locale: ptBR })
+                                    )
+                                ) : (
+                                    <span>Selecione um período</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <CalendarComponent
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={setDate}
+                                numberOfMonths={2}
+                                locale={ptBR}
+                            />
+                        </PopoverContent>
+                    </Popover>
+
                     <Link href="/financeiro/adimplencia">
                         <Button variant="outline" className="bg-white/80 hover:bg-white text-slate-700 h-11 border-red-100 shadow-sm mr-2">
                             <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" /> Adimplência
                         </Button>
                     </Link>
+                    <AvailabilityDialog />
                     <Button onClick={() => setIsDialogOpen(true)} className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-11 px-6">
-                        {/* Replaced old button and dialog with new FinanceDialog usage */}
-                        <FinanceDialog patients={patients} onSave={() => { router.refresh(); toast({ title: "Sucesso", description: "Transação salva com sucesso." }); }} />
+                        <DollarSign className="mr-2 h-4 w-4" /> Nova Transação
+                    </Button>
+                    <FinanceDialog
+                        open={isDialogOpen}
+                        onOpenChange={setIsDialogOpen}
+                        patients={patients}
+                        onSave={() => { router.refresh(); toast({ title: "Sucesso", description: "Transação salva com sucesso." }); }}
+                    />
                 </div>
             </div>
 
             {/* KPI Cards */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 relative z-10">
-                {/* Header Actions */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800">Financeiro Estratégico</h2>
-                        <p className="text-slate-500">Fluxo de Caixa e Indicadores de Performance</p>
-                    </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <AvailabilityDialog />
-                        <FinanceDialog patients={patients} onSave={() => { router.refresh(); toast({ title: "Sucesso", description: "Transação salva com sucesso." }); }} />
-                    </div>
-                </div>
-
                 {/* KPI Cards Grid - Strategic Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 col-span-full">
 
                     {/* 1. Real Profit (Cash Flow) */}
                     <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-lg shadow-emerald-200">
@@ -169,17 +230,24 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                             <TrendingUp className="h-4 w-4 text-emerald-100" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(initialMetrics.netBalance)}</div>
-                            <p className="text-xs text-emerald-100 mt-1">
-                                Receitas: {formatCurrency(initialMetrics.income)} | Despesas: {formatCurrency(initialMetrics.expenses)}
-                            </p>
+                            <div className="text-2xl font-bold">{formatCurrency(metrics.netBalance)}</div>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="text-xs text-emerald-100">
+                                    Receitas: {formatCurrency(metrics.income)}
+                                </p>
+                                {metrics.delta?.income !== undefined && (
+                                    <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 border-none h-5 text-[10px]">
+                                        {metrics.delta.income > 0 ? "+" : ""}{metrics.delta.income.toFixed(0)}%
+                                    </Badge>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
 
                     {/* 2. Occupancy Rate */}
                     <Card className={cn(
                         "border-none shadow-sm",
-                        initialMetrics.efficiency.occupancyRate >= 70 ? "bg-white border-l-4 border-l-green-500" : "bg-white border-l-4 border-l-amber-500"
+                        metrics.efficiency.occupancyRate >= 70 ? "bg-white border-l-4 border-l-green-500" : "bg-white border-l-4 border-l-amber-500"
                     )}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-slate-500">Taxa de Ocupação</CardTitle>
@@ -188,18 +256,18 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                         <CardContent>
                             <div className="flex items-end gap-2">
                                 <div className="text-2xl font-bold text-slate-800">
-                                    {formatPercent(initialMetrics.efficiency.occupancyRate)}
+                                    {formatPercent(metrics.efficiency.occupancyRate)}
                                 </div>
                                 <span className="text-xs text-slate-400 mb-1">de capacidade</span>
                             </div>
                             {/* Simple Progress Bar */}
                             <div className="h-2 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">
                                 <div
-                                    className={cn("h-full rounded-full transition-all", initialMetrics.efficiency.occupancyRate >= 70 ? "bg-green-500" : "bg-amber-500")}
-                                    style={{ width: `${Math.min(initialMetrics.efficiency.occupancyRate, 100)}%` }}
+                                    className={cn("h-full rounded-full transition-all", metrics.efficiency.occupancyRate >= 70 ? "bg-green-500" : "bg-amber-500")}
+                                    style={{ width: `${Math.min(metrics.efficiency.occupancyRate, 100)}%` }}
                                 />
                             </div>
-                            {initialMetrics.efficiency.occupancyRate < 70 && (
+                            {metrics.efficiency.occupancyRate < 70 && (
                                 <p className="text-[10px] text-amber-600 mt-1 font-medium">Há espaço para novos pacientes.</p>
                             )}
                         </CardContent>
@@ -213,10 +281,10 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-slate-800">
-                                {formatCurrency(initialMetrics.efficiency.avgTicket)}
+                                {formatCurrency(metrics.efficiency.avgTicket)}
                             </div>
                             <p className="text-xs text-slate-400 mt-1">
-                                Baseado em {initialMetrics.efficiency.occupiedAppointments} sessões realizadas
+                                Baseado em {metrics.efficiency.occupiedAppointments} sessões realizadas
                             </p>
                         </CardContent>
                     </Card>
@@ -228,7 +296,7 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                             <Calendar className="h-4 w-4 text-slate-400" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-slate-800">{formatCurrency(initialMetrics.forecast)}</div>
+                            <div className="text-2xl font-bold text-slate-800">{formatCurrency(metrics.forecast)}</div>
                             <p className="text-xs text-slate-400 mt-1">
                                 A Receber + Agendamentos
                             </p>

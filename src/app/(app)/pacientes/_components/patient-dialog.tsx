@@ -125,8 +125,8 @@ export function PatientDialog({
                     {children}
                 </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0 gap-0 bg-white shadow-2xl overflow-hidden [&>button]:text-slate-500 [&>button]:hover:text-red-500 [&>button]:transition-colors">
-                <div className="p-6 pb-2 border-b bg-slate-50/50">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0 bg-white shadow-2xl [&>button]:text-slate-500 [&>button]:hover:text-red-500 [&>button]:transition-colors">
+                <div className="p-6 pb-2 border-b bg-slate-50">
                     <DialogHeader className="mb-4">
                         <DialogTitle className="text-xl text-slate-800">{patient ? 'Editar Paciente' : 'Novo Paciente'}</DialogTitle>
                         <DialogDescription className="text-slate-500">
@@ -152,7 +152,7 @@ export function PatientDialog({
                     </Tabs>
                 </div>
 
-                <ScrollArea className="flex-1 p-6 bg-white">
+                <div className="flex-1 overflow-y-auto p-6 bg-white">
                     {/* Conteúdo das Tabs renderizado condicionalmente para manter estado ou usar o display none do TabsContent */}
 
                     <div className={activeTab === "cadastro" ? "block animate-in fade-in slide-in-from-bottom-2 duration-300" : "hidden"}>
@@ -371,7 +371,7 @@ export function PatientDialog({
                         </div>
                     </div>
 
-                </ScrollArea>
+                </div>
 
                 <div className="p-4 border-t bg-slate-50/50 flex justify-end gap-3">
                     <Button

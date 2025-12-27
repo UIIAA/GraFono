@@ -17,7 +17,17 @@ import { Badge } from "@/components/ui/badge";
 interface ConfirmationAssistantProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    appointments: any[];
+    appointments: {
+        id: string;
+        date: Date | string;
+        time: string | null;
+        status: string;
+        type: string;
+        patient: {
+            name: string;
+            phone: string | null;
+        } | null;
+    }[];
 }
 
 export function ConfirmationAssistant({ open, onOpenChange, appointments }: ConfirmationAssistantProps) {
@@ -38,7 +48,7 @@ export function ConfirmationAssistant({ open, onOpenChange, appointments }: Conf
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [appointments]);
 
-    const handleWhatsApp = (apt: any) => {
+    const handleWhatsApp = (apt: ConfirmationAssistantProps["appointments"][0]) => {
         const phone = apt.patient?.phone;
         if (!phone) return;
 

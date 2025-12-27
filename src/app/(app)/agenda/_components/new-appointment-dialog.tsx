@@ -89,7 +89,7 @@ export function NewAppointmentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-white/90 backdrop-blur-xl border border-white/50">
+            <DialogContent className="sm:max-w-[500px] bg-white border border-slate-100 shadow-xl">
                 <DialogHeader>
                     <DialogTitle>Novo Agendamento</DialogTitle>
                 </DialogHeader>

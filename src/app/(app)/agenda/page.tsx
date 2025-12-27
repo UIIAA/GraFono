@@ -1,47 +1,69 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter, Clock } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getAppointments } from "@/app/actions/appointment";
 import { getPatients } from "@/app/actions/patient";
+import { getAvailabilityConfig, AvailabilityData } from "@/app/actions/settings";
 import { NewAppointmentDialog } from "./_components/new-appointment-dialog";
 import { ConfirmationAssistant } from "./_components/confirmation-assistant";
+import { AvailabilityDialog } from "@/components/availability-dialog";
 import { CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "next/navigation";
+import {
+    format,
+    addDays,
+    addWeeks,
+    addMonths,
+    subDays,
+    subWeeks,
+    subMonths,
+    startOfWeek,
+    endOfWeek,
+    eachDayOfInterval,
+    isSameDay,
+    startOfMonth,
+    endOfMonth,
+    getDay,
+    isToday,
+    startOfDay
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AgendaFilter, AgendaFilters } from "./_components/agenda-filter";
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 to 19:00
 
-// Dynamic dates would be better, but for now hooking into existing structure
-// We can assume user is looking at current week? Or stick to specific week?
-// The UI shows "Dezembro 2024" and "Dom 21" - "Sab 27". This is effectively hardcoded to Dec 21-27 2024.
-// I will keep this hardcoded range for visual consistency as requested, but map Real DB dates to these slots if they fall in range.
-
-const DAYS = [
-    { name: "Dom", full: "Domingo", date: 21 },
-    { name: "Seg", full: "Segunda", date: 22, current: true },
-    { name: "Ter", full: "Terça", date: 23 },
-    { name: "Qua", full: "Quarta", date: 24 },
-    { name: "Qui", full: "Quinta", date: 25 },
-    { name: "Sex", full: "Sexta", date: 26 },
-    { name: "Sab", full: "Sábado", date: 27 },
-];
-
-import { useSearchParams } from "next/navigation";
+type ViewMode = 'day' | 'week' | 'month';
 
 export default function AgendaPage() {
+    const { toast } = useToast();
     const searchParams = useSearchParams();
+
+    // State
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [view, setView] = useState<ViewMode>('week');
+    const [activeFilters, setActiveFilters] = useState<AgendaFilters>({});
+
     const [appointments, setAppointments] = useState<any[]>([]);
     const [patients, setPatients] = useState<any[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+    const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | undefined>(undefined);
+    const [availability, setAvailability] = useState<AvailabilityData | null>(null);
+
+    const [presetPatientId, setPresetPatientId] = useState<string | undefined>(undefined);
+    const [presetType, setPresetType] = useState<string | undefined>(undefined);
 
     async function loadData() {
-        const [res, patRes] = await Promise.all([
+        const [res, patRes, avRes] = await Promise.all([
             getAppointments(),
-            getPatients()
+            getPatients(),
+            getAvailabilityConfig()
         ]);
         if (res.success && res.data) {
             setAppointments(res.data);
@@ -49,10 +71,10 @@ export default function AgendaPage() {
         if (patRes.success && patRes.data) {
             setPatients(patRes.data);
         }
+        if (avRes) {
+            setAvailability(avRes);
+        }
     }
-
-    const [presetPatientId, setPresetPatientId] = useState<string | undefined>(undefined);
-    const [presetType, setPresetType] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         loadData();
@@ -65,75 +87,160 @@ export default function AgendaPage() {
         if (isNew === "true") {
             if (patientId) {
                 setPresetPatientId(patientId);
-
-                // Smart Slot Logic: Try to find a pattern in existing appointments
-                // We rely on 'appointments' being loaded. If it's empty initially, this might run before data.
-                // So checking `appointments.length` might be needed or we rely on re-renders.
-                // Better approach: Calculate this when `appointments` changes IF we have a presetPatientId.
             }
             if (type) setPresetType(type);
             setIsDialogOpen(true);
         }
     }, [searchParams]);
 
-    // Secondary Effect: Once appointments are loaded and we have a presetPatientId, try to predict the slot
-    useEffect(() => {
-        if (presetPatientId && appointments.length > 0 && !selectedSlot) {
-            const patientAppts = appointments.filter(a => a.patientId === presetPatientId);
-
-            if (patientAppts.length > 0) {
-                // Sort by date desc
-                patientAppts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-                const lastAppt = patientAppts[0];
-                const lastDate = new Date(lastAppt.date);
-
-                // Simple logic: Same time, next occurrence of the same weekday
-                // E.g. Last was Monday 14:00 at Dec 10. We want Monday 14:00 after Today.
-
-                const targetDayOfWeek = lastDate.getDay(); // 0-6
-                const targetTime = lastAppt.time || "08:00";
-
-                let nextDate = new Date(); // Start from today
-
-                // Advance until we match the day of week
-                while (nextDate.getDay() !== targetDayOfWeek || nextDate < new Date()) {
-                    nextDate.setDate(nextDate.getDate() + 1);
-                }
-
-                // If it's today but the time has passed? Assume we book for future dates generally.
-                // Let's just default to that calculated date.
-
-                setSelectedSlot({
-                    date: nextDate,
-                    time: targetTime
-                });
-            }
+    // Computed Days based on View
+    const displayedDays = useMemo(() => {
+        if (view === 'day') {
+            return [{
+                date: currentDate,
+                dayId: format(currentDate, "EEE").toUpperCase(), // This might need mapping to English for config check if "EEE" is PT
+                name: format(currentDate, "ccc", { locale: ptBR }),
+                full: format(currentDate, "cccc", { locale: ptBR }),
+                dayNum: currentDate.getDate()
+            }];
+        } else if (view === 'week') {
+            const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
+            const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+            return eachDayOfInterval({ start, end }).map(date => ({
+                date,
+                dayId: format(date, "EEE", { locale: undefined }).toUpperCase(), // Helper for EN IDs? see below
+                name: format(date, "ccc", { locale: ptBR }),
+                full: format(date, "cccc", { locale: ptBR }),
+                dayNum: date.getDate()
+            }));
+        } else {
+            // Month view logic handled separately for grid rendering
+            return [];
         }
-    }, [presetPatientId, appointments, selectedSlot]);
+    }, [currentDate, view]);
 
-    // Helper to position events
-    const getEventStyle = (apt: any) => {
-        const date = new Date(apt.date);
-        const day = date.getDate(); // 21-27
+    // Helper for English Day IDs (MON, TUE...) used in Availability Config
+    // If date-fns returns localized "seg", "ter", we need to map them or use a non-localized format
+    // Just force English format for dayId
+    const getDayId = (date: Date) => {
+        // 0=Sun, 1=Mon...
+        const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        return map[getDay(date)];
+    };
+
+    // Filtered Appointments
+    const filteredAppointments = useMemo(() => {
+        return appointments.filter(apt => {
+            if (activeFilters.type && apt.type !== activeFilters.type) return false;
+            if (activeFilters.patientId && apt.patientId !== activeFilters.patientId) return false;
+            return true;
+        });
+    }, [appointments, activeFilters]);
+
+    // Navigation Handlers
+    const handlePrevious = () => {
+        if (view === 'day') setCurrentDate(subDays(currentDate, 1));
+        if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+        if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
+    };
+
+    const handleNext = () => {
+        if (view === 'day') setCurrentDate(addDays(currentDate, 1));
+        if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+        if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    // Availability Helper
+    const isSlotAvailable = (date: Date, hour: number) => {
+        if (!availability) return true; // Validate nothing if no config
+
+        const dayId = getDayId(date);
+
+        // 1. Check Working Days
+        if (!availability.workingDays.includes(dayId)) return false;
+
+        const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+
+        // 2. Check Working Hours (Start - End)
+        const [startH, startM] = availability.startHour.split(':').map(Number);
+        const [endH, endM] = availability.endHour.split(':').map(Number);
+
+        const slotMinutes = hour * 60;
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+
+        if (slotMinutes < startMinutes || slotMinutes >= endMinutes) return false;
+
+        // 3. Check Lunch Break
+        if (availability.lunchStart && availability.lunchEnd) {
+            const [lStartH, lStartM] = availability.lunchStart.split(':').map(Number);
+            const [lEndH, lEndM] = availability.lunchEnd.split(':').map(Number);
+
+            const lunchStart = lStartH * 60 + lStartM;
+            const lunchEnd = lEndH * 60 + lEndM;
+
+            // If slot is inside lunch break
+            if (slotMinutes >= lunchStart && slotMinutes < lunchEnd) return false;
+        }
+
+        return true;
+    };
+
+    const handleSlotClick = (date: Date, hour: number) => {
+        // Validation
+        if (!isSlotAvailable(date, hour)) {
+            toast({
+                title: "Horário Indisponível",
+                description: "Este horário está fora do seu expediente configurado.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const time = `${hour.toString().padStart(2, '0')}:00`;
+        setSelectedSlot({ date, time });
+        setIsDialogOpen(true);
+    };
+
+    // Event Positioning (Only for Day/Week views)
+    const getEventStyle = (apt: any, daysInView: any[]) => {
+        const aptDate = new Date(apt.date);
+
+        // Find which column this event belongs to
+        const dayIndex = daysInView.findIndex(d => isSameDay(d.date, aptDate));
+        if (dayIndex === -1) return { display: 'none' };
+
         const hourStr = apt.time || "08:00";
         const hour = parseInt(hourStr.split(':')[0]);
         const minutes = parseInt(hourStr.split(':')[1] || "0");
 
-        // Find column index (0-6) based on DAYS array matches
-        const dayIndex = DAYS.findIndex(d => d.date === day);
-
-        if (dayIndex === -1) return { display: 'none' };
-
         // Vertical pos
-        // 8:00 is top 0?
-        // each hour is 80px
         const top = (hour - 8) * 80 + (minutes / 60) * 80;
+
+        // Simplify width calc
+        // Container width has 4rem padding (time col)
+        // We use flex-1 for columns so we can use percentages if we account for the offset
+        // But absolute positioning needs exact left/width relative to the container
+        // Let's rely on mapped percentage based on column count
+
+        const colWidthPercent = 100 / daysInView.length;
+
+        // Need to account for the Time Column (w-16 = 4rem = 64px approx)
+        // Since the grid body has the time column and then the days flex row
+        // The events need to be positioned relative to the DAY COLUMNS container if possible
+        // But our structure is: TimeColumn + loop(DayCols). 
+        // Events are children of "Grid Body" which contains TimeLines.
+        // It's trickier to position absolutely over multiple flex columns. 
+        // Fix: Render events INSIDE the day column? No, they span time.
+        // Fix: Render events in an overlay layer on top of the grid.
+
+        // Calculating left/width relative to the Grid Body container (which includes Time Col w-16)
+        // Time Col is w-16 (64px). The rest is shared equally.
 
         return {
             top: `${top}px`,
-            left: `calc(4rem + (100% - 4rem) * ${dayIndex} / 7)`,
-            width: `calc((100% - 4rem) / 7 - 8px)`, // slightly smaller for gap
+            left: `calc(4rem + (100% - 4rem) * ${dayIndex} / ${daysInView.length})`,
+            width: `calc((100% - 4rem) / ${daysInView.length} - 8px)`, // -8px for margin
             height: '74px',
             background: apt.type === 'Avaliação'
                 ? "linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)"
@@ -142,17 +249,84 @@ export default function AgendaPage() {
         };
     };
 
-    const handleSlotClick = (dayDate: number, hour: number) => {
-        // Construct date: Dec 2024
-        const date = new Date(2024, 11, dayDate); // Month is 0-indexed: 11 = Dec
-        const time = `${hour.toString().padStart(2, '0')}:00`;
-        setSelectedSlot({ date, time });
-        setIsDialogOpen(true);
-    };
-
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassButton = "bg-white/80 hover:bg-white border border-red-100 backdrop-blur-sm text-slate-700 shadow-sm";
+
+    // --- Render Month Grid ---
+    const renderMonthView = () => {
+        const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
+        const end = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+        const calendarDays = eachDayOfInterval({ start, end });
+
+        // Chunk into weeks
+        const weeks = [];
+        for (let i = 0; i < calendarDays.length; i += 7) {
+            weeks.push(calendarDays.slice(i, i + 7));
+        }
+
+        return (
+            <div className="flex-1 overflow-y-auto no-scrollbar bg-white/40 p-4">
+                <div className="grid grid-cols-7 gap-1 h-full auto-rows-fr">
+                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(d => (
+                        <div key={d} className="text-center text-xs font-bold text-slate-400 py-2 uppercase">
+                            {d}
+                        </div>
+                    ))}
+                    {calendarDays.map((day) => {
+                        const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                        const dailyApts = filteredAppointments.filter(a => isSameDay(new Date(a.date), day));
+
+                        return (
+                            <div
+                                key={day.toISOString()}
+                                className={cn(
+                                    "min-h-[100px] border border-white/50 rounded-lg p-2 flex flex-col gap-1 transition-colors hover:bg-white/60 cursor-pointer relative group",
+                                    isCurrentMonth ? "bg-white/30" : "bg-white/10 opacity-60",
+                                    isToday(day) && "ring-2 ring-red-200 bg-red-50/30"
+                                )}
+                                onClick={() => {
+                                    // Switch to day view for this day? Or open dialog?
+                                    // Let's open dialog for the morning
+                                    handleSlotClick(day, 9);
+                                }}
+                            >
+                                <span className={cn(
+                                    "text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1",
+                                    isToday(day) ? "bg-red-500 text-white shadow-sm" : "text-slate-600"
+                                )}>
+                                    {day.getDate()}
+                                </span>
+
+                                <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px] no-scrollbar">
+                                    {dailyApts.slice(0, 3).map(apt => (
+                                        <div
+                                            key={apt.id}
+                                            className="text-[10px] truncate px-1.5 py-0.5 rounded-md text-white font-medium"
+                                            style={{
+                                                background: apt.type === 'Avaliação' ? '#ef4444' : '#3b82f6'
+                                            }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                // Could open details
+                                            }}
+                                        >
+                                            {apt.patient?.name || "Paciente"}
+                                        </div>
+                                    ))}
+                                    {dailyApts.length > 3 && (
+                                        <span className="text-[9px] text-center text-slate-500 font-bold">
+                                            +{dailyApts.length - 3} mais
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    };
 
     return (
         <div
@@ -178,15 +352,19 @@ export default function AgendaPage() {
 
                 <div className="flex gap-2">
                     <div className="flex bg-white/50 p-1 rounded-xl shadow-inner border border-white/60">
-                        {['Dia', 'Semana', 'Mês'].map((v, i) => (
-                            <Button
-                                key={v}
-                                variant={i === 1 ? "secondary" : "ghost"}
-                                className={`h-8 text-xs rounded-lg ${i === 1 ? 'bg-white shadow-sm text-red-600 font-bold' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                {v}
-                            </Button>
-                        ))}
+                        {(['day', 'week', 'month'] as const).map((v) => {
+                            const label = v === 'day' ? 'Dia' : v === 'week' ? 'Semana' : 'Mês';
+                            return (
+                                <Button
+                                    key={v}
+                                    variant={view === v ? "secondary" : "ghost"}
+                                    onClick={() => setView(v)}
+                                    className={`h-8 text-xs rounded-lg ${view === v ? 'bg-white shadow-sm text-red-600 font-bold' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    {label}
+                                </Button>
+                            )
+                        })}
                     </div>
                     <Button
                         onClick={() => {
@@ -203,13 +381,20 @@ export default function AgendaPage() {
             {/* Calendar Controls */}
             <div className={`p-4 flex justify-between items-center mb-4 relative z-10`}>
                 <div className="flex items-center gap-2 bg-white/40 p-1 rounded-xl border border-white/50 backdrop-blur-sm shadow-sm">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/60">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/60" onClick={handlePrevious}>
                         <ChevronLeft className="h-4 w-4 text-slate-600" />
                     </Button>
-                    <span className="text-sm font-bold text-slate-800 px-2 min-w-[140px] text-center">
-                        Dezembro 2024
+                    <span className="text-sm font-bold text-slate-800 px-2 min-w-[160px] text-center capitalize">
+                        {/* Dynamic Label depending on View */}
+                        {view === 'day' && format(currentDate, "d 'de' MMMM, yyyy", { locale: ptBR })}
+                        {view === 'week' && (
+                            <>
+                                {format(startOfWeek(currentDate), "d MMM", { locale: ptBR })} - {format(endOfWeek(currentDate), "d MMM", { locale: ptBR })}
+                            </>
+                        )}
+                        {view === 'month' && format(currentDate, "MMMM yyyy", { locale: ptBR })}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/60">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/60" onClick={handleNext}>
                         <ChevronRight className="h-4 w-4 text-slate-600" />
                     </Button>
                 </div>
@@ -222,88 +407,117 @@ export default function AgendaPage() {
                     >
                         <CheckCircle className="mr-2 h-3 w-3" /> Confirmar
                     </Button>
-                    <Button variant="outline" className={`${glassButton} border-dashed`}>
-                        <Filter className="mr-2 h-3 w-3" /> Filtros
+
+                    <AgendaFilter
+                        patients={patients}
+                        activeFilters={activeFilters}
+                        onFilterChange={setActiveFilters}
+                    />
+
+                    <Button
+                        variant="outline"
+                        className={`${glassButton} bg-slate-50 border-slate-200`}
+                        onClick={() => setIsAvailabilityOpen(true)}
+                    >
+                        <Settings className="mr-2 h-3 w-3" /> Config
                     </Button>
                 </div>
             </div>
 
-            {/* Calendar Grid */}
+            {/* Calendar Grid - View Switcher */}
             <div className={`flex-1 ${glassCard} rounded-3xl overflow-hidden flex flex-col relative z-20`}>
-                {/* Header Row (Days) */}
-                <div className="flex border-b border-white/40 bg-white/30 backdrop-blur-xl sticky top-0 z-30">
-                    <div className="w-16 border-r border-white/40 flex-shrink-0" />
-                    {DAYS.map((day) => (
-                        <div
-                            key={day.date}
-                            className={cn(
-                                "flex-1 py-4 text-center border-r border-white/40 last:border-r-0 flex flex-col items-center gap-1 transition-colors",
-                                day.current ? "bg-red-50/50" : ""
-                            )}
-                        >
-                            <span className={cn(
-                                "text-[10px] uppercase font-bold tracking-widest",
-                                day.current ? "text-red-600" : "text-slate-400"
-                            )}>{day.name}</span>
-                            <div className={cn(
-                                "text-lg font-bold w-10 h-10 flex items-center justify-center rounded-2xl transition-all",
-                                day.current ? "bg-red-500 text-white shadow-lg shadow-red-200 scale-110" : "text-slate-700"
-                            )}>
-                                {day.date}
-                            </div>
-                        </div>
-                    ))}
-                </div>
 
-                {/* Grid Body */}
-                <div className="flex-1 relative overflow-y-auto no-scrollbar bg-white/20">
-                    {/* Time Lines */}
-                    {HOURS.map((hour) => (
-                        <div key={hour} className="flex h-20 border-b border-white/30 last:border-0 relative group">
-                            <div className="w-16 border-r border-white/30 flex-shrink-0 text-xs font-medium text-slate-400 p-2 text-right relative">
-                                <span className="relative -top-3">{hour}:00</span>
-                            </div>
-                            {/* Vertical Grid Lines */}
-                            {DAYS.map((day) => (
+                {view === 'month' ? renderMonthView() : (
+                    <>
+                        {/* Header Row (Days) */}
+                        <div className="flex border-b border-white/40 bg-white/30 backdrop-blur-xl sticky top-0 z-30">
+                            <div className="w-16 border-r border-white/40 flex-shrink-0" />
+                            {displayedDays.map((day) => {
+                                const isCurrent = isToday(day.date);
+                                return (
+                                    <div
+                                        key={day.date.toISOString()}
+                                        className={cn(
+                                            "flex-1 py-4 text-center border-r border-white/40 last:border-r-0 flex flex-col items-center gap-1 transition-colors",
+                                            isCurrent ? "bg-red-50/50" : ""
+                                        )}
+                                    >
+                                        <span className={cn(
+                                            "text-[10px] uppercase font-bold tracking-widest",
+                                            isCurrent ? "text-red-600" : "text-slate-400"
+                                        )}>{day.name}</span>
+                                        <div className={cn(
+                                            "text-lg font-bold w-10 h-10 flex items-center justify-center rounded-2xl transition-all",
+                                            isCurrent ? "bg-red-500 text-white shadow-lg shadow-red-200 scale-110" : "text-slate-700"
+                                        )}>
+                                            {day.dayNum}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Grid Body */}
+                        <div className="flex-1 relative overflow-y-auto no-scrollbar bg-white/20">
+                            {/* Time Lines */}
+                            {HOURS.map((hour) => (
+                                <div key={hour} className="flex h-20 border-b border-white/30 last:border-0 relative group">
+                                    <div className="w-16 border-r border-white/30 flex-shrink-0 text-xs font-medium text-slate-400 p-2 text-right relative">
+                                        <span className="relative -top-3">{hour}:00</span>
+                                    </div>
+                                    {/* Vertical Grid Lines */}
+                                    {displayedDays.map((day) => {
+                                        const available = isSlotAvailable(day.date, hour);
+                                        return (
+                                            <div
+                                                key={day.date.toISOString()}
+                                                onClick={() => handleSlotClick(day.date, hour)}
+                                                className={cn(
+                                                    "flex-1 border-r border-white/30 last:border-r-0 h-full relative cursor-pointer transition-colors",
+                                                    isToday(day.date) ? "bg-red-50/10" : "",
+                                                    available ? "hover:bg-white/40" : "bg-gray-100/50 cursor-not-allowed hover:bg-gray-200/50"
+                                                )}
+                                            >
+                                                {!available && (
+                                                    <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                                        <Clock className="w-4 h-4 text-slate-400" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+
+                            {/* DB Events */}
+                            {filteredAppointments.map(apt => (
                                 <div
-                                    key={day.date}
-                                    onClick={() => handleSlotClick(day.date, hour)}
-                                    className={cn(
-                                        "flex-1 border-r border-white/30 last:border-r-0 h-full relative cursor-pointer hover:bg-white/40 transition-colors",
-                                        day.current ? "bg-red-50/10" : ""
-                                    )}
-                                />
+                                    key={apt.id}
+                                    className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
+                                    style={getEventStyle(apt, displayedDays)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Edit logic could go here
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start text-white">
+                                        <span className="font-bold text-xs">{apt.type || "Consulta"}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <Avatar className="h-6 w-6 border-2 border-white/30">
+                                            <AvatarFallback className="bg-white/20 text-white text-[9px]">
+                                                {apt.patient?.name?.substring(0, 2).toUpperCase() || "PT"}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-white/90 text-[10px] font-medium">
+                                            {apt.patient?.name || "Paciente"}
+                                        </span>
+                                    </div>
+                                </div>
                             ))}
                         </div>
-                    ))}
-
-                    {/* DB Events */}
-                    {appointments.map(apt => (
-                        <div
-                            key={apt.id}
-                            className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
-                            style={getEventStyle(apt)}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                // Edit logic could go here
-                            }}
-                        >
-                            <div className="flex justify-between items-start text-white">
-                                <span className="font-bold text-xs">{apt.type || "Consulta"}</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-2">
-                                <Avatar className="h-6 w-6 border-2 border-white/30">
-                                    <AvatarFallback className="bg-white/20 text-white text-[9px]">
-                                        {apt.patient?.name?.substring(0, 2).toUpperCase() || "PT"}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <span className="text-white/90 text-[10px] font-medium">
-                                    {apt.patient?.name || "Paciente"}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </div>
 
             <NewAppointmentDialog
@@ -321,7 +535,17 @@ export default function AgendaPage() {
                 open={isAssistantOpen}
                 onOpenChange={setIsAssistantOpen}
                 appointments={appointments}
+            // appointments={filteredAppointments} // Should confirmation use filtered or all? All usually.
+            />
+
+            <AvailabilityDialog
+                open={isAvailabilityOpen}
+                onOpenChange={(open) => {
+                    setIsAvailabilityOpen(open);
+                    if (!open) loadData(); // Reload availability when closed
+                }}
             />
         </div>
-    )
+    );
 }
+

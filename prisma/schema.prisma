@@ -23,8 +23,29 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
+  // Relations
   notifications Notification[]
   patientProfile Patient?  @relation(name: "UserToPatient") // If this user is a patient
+  templates     Template[]
+
+  // Professional Profile
+  digitalSignature String? // URL or Base64
+  crfa             String? // Conselho Regional
+  specialty        String? // Fonoaudiologia Educacional, etc.
+  address          String? // Clinic Address for Header
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   // HTML/Rick Text
+  category    String   // Atestado, Encaminhamento, Recibo, Contrato
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Patient {
@@ -72,6 +93,7 @@ model Patient {
   history       PatientHistory[]
   knowledgeBase PatientKnowledgeBase[]
   evolutions    Evolution[]
+  reminders     Reminder[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -268,4 +290,37 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
   
   createdAt DateTime @default(now())
+}
+
+model AvailabilityConfig {
+  id              String   @id @default(cuid())
+  workingDays     String   // JSON string of days [1, 2, 3, 4, 5]
+  startHour       String   // "08:00"
+  endHour         String   // "18:00"
+  lunchStart      String?  // "12:00"
+  lunchEnd        String?  // "13:00"
+  sessionDuration Int      @default(30) // in minutes
+  
+  updatedAt       DateTime @updatedAt
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // RECIBO_GOV, GENERAL
+  priority    String   @default("NORMAL") // LOW, NORMAL, HIGH
+  
+  dueDate     DateTime?
+  isCompleted Boolean  @default(false)
+  link        String?  // External link (e.g. Gov.br)
+  
+  // Relation to User (Professional)
+  userId      String? 
+  // Ideally relation to Patient too to link back?
+  patientId   String?
+  patient     Patient? @relation(fields: [patientId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

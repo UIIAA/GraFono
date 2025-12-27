@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { getActiveReminders } from "@/app/actions/reminders";
+import { ReminderList } from "@/components/reminder-list";
 import { getDashboardMetrics } from "@/app/actions/dashboard";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -29,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<any>(null);
+    const [reminders, setReminders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [weekDays, setWeekDays] = useState<Date[]>([]);
@@ -46,9 +49,16 @@ export default function DashboardPage() {
 
         async function load() {
             setLoading(true);
-            const result = await getDashboardMetrics();
-            if (result.success) {
-                setMetrics(result.data);
+            const [metricsRes, remindersRes] = await Promise.all([
+                getDashboardMetrics(),
+                getActiveReminders()
+            ]);
+
+            if (metricsRes.success) {
+                setMetrics(metricsRes.data);
+            }
+            if (remindersRes.success) {
+                setReminders(remindersRes.data);
             }
             setLoading(false);
         }
@@ -156,6 +166,10 @@ export default function DashboardPage() {
 
                 {/* Coluna Direita: Notificações, Agenda, Próximo */}
                 <div className="space-y-6 flex flex-col">
+
+                    {/* Active Reminders - New Section */}
+                    <ReminderList reminders={reminders} />
+
                     {/* Notificações */}
                     <Card className={`${glassCard} border-0`}>
                         <CardHeader className="pb-3 border-b border-white/50">
