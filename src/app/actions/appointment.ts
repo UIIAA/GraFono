@@ -34,6 +34,7 @@ export async function createAppointment(data: {
     time: string;
     patientId: string;
     type: string;
+    location?: string;
     notes?: string;
 }) {
     try {
@@ -43,6 +44,7 @@ export async function createAppointment(data: {
                 time: data.time,
                 patientId: data.patientId,
                 type: data.type,
+                location: data.location || "Presencial",
                 status: "Agendado", // Default
                 notes: data.notes
             }
@@ -75,6 +77,7 @@ export async function updateAppointment(id: string, data: {
     time: string;
     patientId: string;
     type: string;
+    location?: string;
     notes?: string;
     status?: string;
 }) {
@@ -86,6 +89,7 @@ export async function updateAppointment(id: string, data: {
                 time: data.time,
                 patientId: data.patientId,
                 type: data.type,
+                location: data.location,
                 notes: data.notes,
                 status: data.status
             }

@@ -48,6 +48,7 @@ export function NewAppointmentDialog({
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [type, setType] = useState("Avaliação");
+    const [location, setLocation] = useState("Presencial");
     const [notes, setNotes] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -60,6 +61,7 @@ export function NewAppointmentDialog({
                 setDate(d.toISOString().split('T')[0]);
                 setTime(appointmentToEdit.time);
                 setType(appointmentToEdit.type);
+                setLocation(appointmentToEdit.location || "Presencial");
                 setNotes(appointmentToEdit.notes || "");
             } else {
                 if (initialDate) {
@@ -75,6 +77,7 @@ export function NewAppointmentDialog({
 
                 setPatientId(initialPatientId || "");
                 setType(initialType || "Avaliação");
+                setLocation("Presencial");
                 setNotes("");
             }
         }
@@ -105,6 +108,7 @@ export function NewAppointmentDialog({
                     time,
                     patientId,
                     type,
+                    location,
                     notes
                 });
             } else {
@@ -113,6 +117,7 @@ export function NewAppointmentDialog({
                     time,
                     patientId,
                     type,
+                    location,
                     notes
                 });
             }
@@ -188,6 +193,19 @@ export function NewAppointmentDialog({
                                 <SelectItem value="Terapia">Terapia</SelectItem>
                                 <SelectItem value="Exame">Exame</SelectItem>
                                 <SelectItem value="Outro">Outro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label>Localização</Label>
+                        <Select value={location} onValueChange={setLocation}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione o local" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Presencial">Presencial</SelectItem>
+                                <SelectItem value="Online">Online (Remoto)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

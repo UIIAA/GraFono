@@ -143,6 +143,7 @@ model Appointment {
   time        String?
   status      String   // Agendado, Realizado, Cancelado
   type        String   // Terapia, Avaliação, Consulta
+  location    String   @default("Presencial") // Presencial, Online
   notes       String?
   
   patientId   String
