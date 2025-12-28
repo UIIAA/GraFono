@@ -24,7 +24,8 @@ import {
     Info,
     Dumbbell,
     Flag,
-    Sparkles
+    Sparkles,
+    Video
 } from "lucide-react";
 import {
     LineChart,
@@ -97,11 +98,34 @@ export default function PortalDashboard({ data }: { data: PatientDashboardData }
                                     {nextAppointment && ` às ${nextAppointment.time}`}
                                 </h3>
                                 <p className="text-slate-500">{nextAppointment?.type || "Agende com seu fonoaudiólogo"}</p>
+                                {nextAppointment?.location && nextAppointment.location !== "Presencial" && (
+                                    <Badge variant="outline" className="mt-1 border-green-200 text-green-700 bg-green-50">
+                                        Online
+                                    </Badge>
+                                )}
+                                {nextAppointment?.location === "Presencial" && (
+                                    <Badge variant="outline" className="mt-1 border-slate-200 text-slate-600 bg-slate-50">
+                                        Presencial
+                                    </Badge>
+                                )}
                             </div>
                             {nextAppointment && (
-                                <Button variant="outline" className="border-slate-200">
-                                    Ver Agenda <ChevronRight className="ml-2 w-4 h-4" />
-                                </Button>
+                                <div className="flex flex-col gap-2">
+                                    {/* Show Link only if NOT Presencial */}
+                                    {nextAppointment.location !== "Presencial" ? (
+                                        <Button className="bg-green-600 hover:bg-green-700 text-white">
+                                            Entrar na Chamada
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" className="border-slate-200" disabled>
+                                            Atendimento Presencial
+                                        </Button>
+                                    )}
+
+                                    <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600">
+                                        Ver Detalhes <ChevronRight className="ml-1 w-3 h-3" />
+                                    </Button>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

@@ -11,6 +11,7 @@ export interface NextAppointment {
     time: string;
     type: string;
     professionalName: string;
+    location?: string; // "Presencial" or "Online" (URL)
 }
 
 export interface PatientFinancialSummary {

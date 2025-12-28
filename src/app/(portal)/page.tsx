@@ -18,7 +18,8 @@ async function getPortalData(): Promise<PatientDashboardData> {
             date: new Date(2025, 0, 15), // Jan 15, 2025
             time: "14:30",
             type: "Terapia de Fala",
-            professionalName: "Graciele Costa"
+            professionalName: "Graciele Costa",
+            location: "Presencial" // Changed default to Presencial to test the hidden link logic
         },
         financial: {
             pendingAmount: 150.00,

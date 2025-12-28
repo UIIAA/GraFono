@@ -17,11 +17,20 @@ import {
   Settings,
   HelpCircle,
   Wallet,
-  Menu,
-  ChevronRight,
-  AudioWaveform,
-  User
+  User,
+  ChevronDown,
+  FolderOpen,
+  Briefcase,
+  Building2,
+  Stethoscope,
+  AudioWaveform
 } from "lucide-react";
+import { useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface SidebarProps {
   className?: string;
@@ -30,61 +39,93 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
 
-  const routes = [
+  // Route Groups Configuration
+  const routeGroups = [
     {
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/dashboard",
+      label: "Visão Geral",
+      items: [
+        {
+          label: "Dashboard",
+          icon: LayoutDashboard,
+          href: "/dashboard",
+        },
+      ]
     },
     {
-      label: "Pacientes",
-      icon: Users,
-      href: "/pacientes",
+      label: "Atendimento",
+      items: [
+        {
+          label: "Agenda",
+          icon: Calendar,
+          href: "/agenda",
+        },
+        {
+          label: "Pacientes",
+          icon: Users,
+          href: "/pacientes",
+        },
+      ]
     },
     {
-      label: "Agenda",
-      icon: Calendar,
-      href: "/agenda",
+      label: "Documentação",
+      icon: FolderOpen,
+      collapsible: true,
+      items: [
+        {
+          label: "Avaliações",
+          icon: ClipboardList,
+          href: "/avaliacoes",
+        },
+        {
+          label: "Relatórios",
+          icon: FileText,
+          href: "/relatorios",
+        },
+        {
+          label: "Exames",
+          icon: Activity,
+          href: "/exames",
+        },
+      ]
     },
     {
-      label: "Avaliações",
-      icon: ClipboardList,
-      href: "/avaliacoes",
+      label: "Gestão",
+      icon: Building2,
+      collapsible: true, // Optional: could be always open if preferred, but we'll make it collapsible per plan
+      items: [
+        {
+          label: "Financeiro",
+          icon: Wallet,
+          href: "/financeiro",
+        },
+        {
+          label: "Métricas",
+          icon: BarChart3,
+          href: "/metricas",
+        },
+      ]
     },
     {
-      label: "Relatórios",
-      icon: FileText,
-      href: "/relatorios",
-    },
-    {
-      label: "Exames",
-      icon: Activity,
-      href: "/exames",
-    },
-    {
-      label: "Calculadora",
-      icon: Calculator,
-      href: "/calculadora",
-    },
-    {
-      label: "Métricas",
-      icon: BarChart3,
-      href: "/metricas",
-    },
-    {
-      label: "Modelos",
-      icon: LayoutTemplate,
-      href: "/modelos",
-    },
-    {
-      label: "Financeiro",
-      icon: Wallet,
-      href: "/financeiro",
-    },
-    {
-      label: "Portal Paciente",
-      icon: User, // Using User icon, need to import it or borrow from existing
-      href: "/portal",
+      label: "Ferramentas",
+      icon: Briefcase,
+      collapsible: true,
+      items: [
+        {
+          label: "Calculadora",
+          icon: Calculator,
+          href: "/calculadora",
+        },
+        {
+          label: "Modelos",
+          icon: LayoutTemplate,
+          href: "/modelos",
+        },
+        {
+          label: "Portal Paciente",
+          icon: User,
+          href: "/portal",
+        }
+      ]
     }
   ];
 
@@ -104,53 +145,48 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 py-4 flex flex-col gap-1 overflow-y-auto">
-        <p className="px-4 text-xs font-bold text-red-100 uppercase tracking-wider mb-2">Menu Principal</p>
+      <nav className="flex-1 px-4 py-4 flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
 
-        {routes.map((route) => {
-          const isActive = pathname?.startsWith(route.href);
+        {routeGroups.map((group, groupIndex) => {
+          // Check if any child is active to possibly default open the collapsible
+          const isGroupActive = group.items.some(item => pathname?.startsWith(item.href));
+
+          if (group.collapsible) {
+            return (
+              <SidebarGroup
+                key={group.label}
+                label={group.label}
+                icon={group.icon}
+                defaultOpen={isGroupActive}
+              >
+                {group.items.map(item => (
+                  <SidebarItem key={item.href} item={item} pathname={pathname} isNested />
+                ))}
+              </SidebarGroup>
+            )
+          }
 
           return (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium",
-                isActive
-                  ? "bg-white/20 text-white font-bold shadow-sm backdrop-blur-md ring-1 ring-white/10"
-                  : "text-red-50 hover:bg-white/10 hover:text-white transition-colors hover:shadow-sm"
+            <div key={group.label} className="flex flex-col gap-1">
+              {group.label !== "Visão Geral" && (
+                <p className="px-4 text-xs font-bold text-red-100 uppercase tracking-wider mb-2 mt-2">
+                  {group.label}
+                </p>
               )}
-            >
-              <route.icon
-                className={cn(
-                  "h-5 w-5 transition-transform group-hover:scale-110",
-                  isActive ? "fill-current" : ""
-                )}
-              />
-              {route.label}
-              {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-foreground" />
-              )}
-            </Link>
+              {group.items.map(item => (
+                <SidebarItem key={item.href} item={item} pathname={pathname} />
+              ))}
+            </div>
           );
         })}
 
         <div className="my-2 border-t border-sidebar-border/50 mx-2" />
 
-        <Link
-          href="/configuracoes"
-          className="group flex items-center gap-3 px-4 py-3 rounded-xl text-red-50 hover:bg-white/10 hover:text-white transition-all text-sm font-medium"
-        >
-          <Settings className="h-5 w-5 group-hover:rotate-45 transition-transform" />
-          Configurações
-        </Link>
-        <Link
-          href="/ajuda"
-          className="group flex items-center gap-3 px-4 py-3 rounded-xl text-red-50 hover:bg-white/10 hover:text-white transition-all text-sm font-medium"
-        >
-          <HelpCircle className="h-5 w-5 group-hover:scale-110 transition-transform" />
-          Ajuda
-        </Link>
+        <div className="flex flex-col gap-1">
+          <SidebarItem item={{ label: "Configurações", icon: Settings, href: "/configuracoes" }} pathname={pathname} />
+          <SidebarItem item={{ label: "Ajuda", icon: HelpCircle, href: "/ajuda" }} pathname={pathname} />
+        </div>
+
       </nav>
 
       {/* Footer / User Profile */}
@@ -168,4 +204,53 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
     </aside>
   );
+}
+
+// Helper Components
+
+function SidebarItem({ item, pathname, isNested = false }: { item: any, pathname: string | null, isNested?: boolean }) {
+  const isActive = pathname?.startsWith(item.href);
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "group flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
+        isActive
+          ? "bg-white/20 text-white font-bold shadow-sm backdrop-blur-md ring-1 ring-white/10"
+          : "text-red-50 hover:bg-white/10 hover:text-white transition-colors hover:shadow-sm",
+        isNested && !isActive ? "text-red-100/80 pl-10" : isNested && isActive ? "pl-4" : "" // Nested styling logic
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-5 w-5 transition-transform group-hover:scale-110",
+          isActive ? "fill-current" : ""
+        )}
+      />
+      {item.label}
+      {isActive && (
+        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-foreground" />
+      )}
+    </Link>
+  );
+}
+
+function SidebarGroup({ label, icon: Icon, children, defaultOpen }: { label: string, icon: any, children: React.ReactNode, defaultOpen: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
+      <CollapsibleTrigger className="w-full group flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-50 hover:bg-white/10 hover:text-white transition-all text-sm font-medium">
+        <Icon className="h-5 w-5" />
+        {label}
+        <ChevronDown className={cn("hidden ml-auto h-4 w-4 transition-transform duration-200", isOpen ? "transform rotate-180" : "")} /> {/* Hidden chevron on hover maybe? or always visible but subtle */}
+        <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform duration-200 opacity-60", isOpen && "rotate-180")} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-1 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  )
 }
