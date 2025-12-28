@@ -3,7 +3,7 @@
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { Column, Task } from "../types";
-import { TaskCard } from "./task-card";
+import { PatientCard } from "@/components/patient-card";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,12 +52,11 @@ export function BoardColumn({ column, tasks, className, onEdit, onHistory }: Boa
             <div className="flex-1 p-3 overflow-y-auto no-scrollbar space-y-3">
                 <SortableContext items={taskIds}>
                     {tasks.map((task) => (
-                        <TaskCard
+                        <PatientCard
                             key={task.id}
-                            task={task}
-                            patientName={task.content}
-                            onEdit={onEdit}
-                            onHistory={onHistory}
+                            patient={task.patient}
+                            onEdit={() => onEdit?.(task)}
+                            onHistory={() => onHistory?.(task)}
                         />
                     ))}
                 </SortableContext>

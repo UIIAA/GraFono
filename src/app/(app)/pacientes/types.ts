@@ -4,12 +4,18 @@ export type Patient = {
     email: string;
     phone: string;
     status: string;
+    imageUrl?: string;
     history: PatientHistoryEntry[];
     negotiatedValue?: number;
     financialSource?: string;
     insuranceName?: string;
     insuranceNumber?: string;
     authorizationStatus?: string;
+    progress?: {
+        completedSessions: number;
+        cycleStart?: Date | string;
+    };
+    appointments?: { date: Date | string }[];
 };
 
 export type PatientHistoryEntry = {
@@ -31,4 +37,5 @@ export type Task = {
     patientId: string;
     tags: string[];
     nextReevaluation?: Date | string;
+    patient: Patient;
 };

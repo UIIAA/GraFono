@@ -10,15 +10,16 @@ import {
   ClipboardList,
   FileText,
   Activity,
-  BarChart,
+  BarChart3,
   Calculator,
   LayoutTemplate,
-  UserCircle,
   LogOut,
-  Brain,
   Settings,
   HelpCircle,
-  Wallet
+  Wallet,
+  Menu,
+  ChevronRight,
+  AudioWaveform
 } from "lucide-react";
 
 export function Sidebar() {
@@ -29,19 +30,16 @@ export function Sidebar() {
       label: "Dashboard",
       icon: LayoutDashboard,
       href: "/dashboard",
-      color: "text-blue-500",
     },
     {
       label: "Pacientes",
       icon: Users,
       href: "/pacientes",
-      color: "text-blue-500",
     },
     {
       label: "Agenda",
       icon: Calendar,
       href: "/agenda",
-      color: "text-blue-500",
     },
     {
       label: "Avaliações",
@@ -65,7 +63,7 @@ export function Sidebar() {
     },
     {
       label: "Métricas",
-      icon: BarChart,
+      icon: BarChart3,
       href: "/metricas",
     },
     {
@@ -77,68 +75,87 @@ export function Sidebar() {
       label: "Financeiro",
       icon: Wallet,
       href: "/financeiro",
-      color: "text-red-500",
     }
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#0B0E14] text-gray-300 border-r border-[#1F2937]">
-      <div className="p-6">
-        <Link href="/dashboard" className="flex items-center gap-3 mb-8">
-          <div className="bg-blue-600 p-2 rounded-xl">
-            <Brain className="h-6 w-6 text-white" />
+    <aside className="hidden md:flex flex-col w-[260px] h-full bg-sidebar border-r border-sidebar-border transition-colors duration-300 z-20">
+      {/* Header */}
+      <div className="p-6 pb-2">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="bg-white/20 rounded-xl p-2 shrink-0 backdrop-blur-sm">
+            <AudioWaveform className="h-6 w-6 text-sidebar-primary" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">FonoIA</h1>
-            <span className="text-xs text-gray-500 font-medium">Gestão Inteligente</span>
+          <div className="flex flex-col">
+            <h1 className="text-sidebar-foreground text-lg font-bold leading-none tracking-tight">FonoIA</h1>
+            <p className="text-sidebar-foreground/70 text-xs font-medium mt-1">Smart Management</p>
           </div>
         </Link>
+      </div>
 
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-2">Menu Principal</p>
-          {routes.map((route) => (
+      {/* Nav */}
+      <nav className="flex-1 px-4 py-4 flex flex-col gap-1 overflow-y-auto">
+        <p className="px-4 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2">Menu Principal</p>
+
+        {routes.map((route) => {
+          const isActive = pathname?.startsWith(route.href);
+
+          return (
             <Link
               key={route.href}
               href={route.href}
               className={cn(
-                "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
-                pathname === route.href
-                  ? "bg-blue-600/10 text-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)] border border-blue-600/20"
-                  : "hover:bg-[#1F2937]/50 hover:text-white text-gray-400"
+                "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium",
+                isActive
+                  ? "bg-white/20 text-sidebar-foreground font-bold shadow-sm backdrop-blur-md ring-1 ring-white/10"
+                  : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground transition-colors hover:shadow-sm"
               )}
             >
-              <route.icon className={cn("h-5 w-5 mr-3 transition-colors",
-                pathname === route.href ? "text-blue-500" : "text-gray-500 group-hover:text-white"
-              )} />
+              <route.icon
+                className={cn(
+                  "h-5 w-5 transition-transform group-hover:scale-110",
+                  isActive ? "fill-current" : ""
+                )}
+              />
               {route.label}
+              {isActive && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-foreground" />
+              )}
             </Link>
-          ))}
-        </div>
-      </div>
+          );
+        })}
 
-      <div className="mt-auto p-4 border-t border-[#1F2937] bg-[#0B0E14]">
-        <div className="space-y-1 mb-4">
-          <Link href="/configuracoes" className="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-lg hover:text-white hover:bg-[#1F2937]/50 transition-colors">
-            <Settings className="h-4 w-4 mr-3" />
-            Configurações
-          </Link>
-          <Link href="/ajuda" className="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-lg hover:text-white hover:bg-[#1F2937]/50 transition-colors">
-            <HelpCircle className="h-4 w-4 mr-3" />
-            Ajuda
-          </Link>
-        </div>
+        <div className="my-2 border-t border-sidebar-border/50 mx-2" />
 
-        <div className="flex items-center p-3 rounded-xl bg-[#1F2937]/30 border border-[#1F2937]">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+        <Link
+          href="/configuracoes"
+          className="group flex items-center gap-3 px-4 py-3 rounded-xl text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground transition-all text-sm font-medium"
+        >
+          <Settings className="h-5 w-5 group-hover:rotate-45 transition-transform" />
+          Configurações
+        </Link>
+        <Link
+          href="/ajuda"
+          className="group flex items-center gap-3 px-4 py-3 rounded-xl text-sidebar-foreground/80 hover:bg-white/10 hover:text-sidebar-foreground transition-all text-sm font-medium"
+        >
+          <HelpCircle className="h-5 w-5 group-hover:scale-110 transition-transform" />
+          Ajuda
+        </Link>
+      </nav>
+
+      {/* Footer / User Profile */}
+      <div className="p-4 mt-auto border-t border-sidebar-border/50 bg-black/5 backdrop-blur-sm">
+        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer group">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-sidebar-primary to-orange-400 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white/20">
             MC
           </div>
-          <div className="ml-3 overflow-hidden">
-            <p className="text-sm font-medium text-white truncate">Marcos Cruz</p>
-            <p className="text-xs text-gray-500 truncate">Fonoaudiólogo</p>
+          <div className="flex flex-col min-w-0 overflow-hidden">
+            <p className="text-sm font-bold text-sidebar-foreground truncate group-hover:text-white transition-colors">Marcos Cruz</p>
+            <p className="text-xs text-sidebar-foreground/70 truncate">Fonoaudiólogo</p>
           </div>
-          <LogOut className="h-4 w-4 ml-auto text-gray-500 cursor-pointer hover:text-white transition-colors" />
+          <LogOut className="h-4 w-4 ml-auto text-sidebar-foreground/60 hover:text-destructive transition-colors" />
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

@@ -294,11 +294,18 @@ model Notification {
 
 model AvailabilityConfig {
   id              String   @id @default(cuid())
+  
+  // Deprecated/Legacy fields (Keep for rollback safety until migration complete)
   workingDays     String   // JSON string of days [1, 2, 3, 4, 5]
   startHour       String   // "08:00"
   endHour         String   // "18:00"
   lunchStart      String?  // "12:00"
   lunchEnd        String?  // "13:00"
+  
+  // New Granular Availability
+  // Format: [ { day: "MON", slots: [{ start: "08:00", end: "12:00" }] } ]
+  timeSlots       String?  // JSON string
+  
   sessionDuration Int      @default(30) // in minutes
   
   updatedAt       DateTime @updatedAt

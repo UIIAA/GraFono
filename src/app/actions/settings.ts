@@ -3,6 +3,18 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
+
+export interface TimeSlot {
+    start: string;
+    end: string;
+}
+
+export interface DaySlots {
+    day: string; // "MON", "TUE"
+    active: boolean;
+    slots: TimeSlot[];
+}
+
 export type AvailabilityData = {
     workingDays: string[];
     startHour: string;
@@ -10,15 +22,21 @@ export type AvailabilityData = {
     lunchStart?: string;
     lunchEnd?: string;
     sessionDuration: number;
+    timeSlots?: DaySlots[];
 };
 
 export async function getAvailabilityConfig() {
     try {
         const config = await db.availabilityConfig.findFirst();
         if (!config) return null;
+
+        // Parse timeSlots if exists, or return empty default (or migration logic placeholder)
+        const timeSlots = config.timeSlots ? JSON.parse(config.timeSlots) : [];
+
         return {
             ...config,
-            workingDays: JSON.parse(config.workingDays) as string[]
+            workingDays: JSON.parse(config.workingDays) as string[],
+            timeSlots: timeSlots as DaySlots[]
         };
     } catch (error) {
         console.error("Error fetching availability:", error);
@@ -37,7 +55,8 @@ export async function saveAvailabilityConfig(data: AvailabilityData) {
             endHour: data.endHour,
             lunchStart: data.lunchStart,
             lunchEnd: data.lunchEnd,
-            sessionDuration: data.sessionDuration
+            sessionDuration: data.sessionDuration,
+            timeSlots: JSON.stringify(data.timeSlots || [])
         };
 
         if (existing) {

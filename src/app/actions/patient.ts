@@ -10,9 +10,31 @@ export async function getPatients() {
             orderBy: { createdAt: "desc" },
             include: {
                 transactions: true,
+                appointments: {
+                    select: {
+                        date: true,
+                        status: true
+                    }
+                }
             }
         });
-        return { success: true, data: patients };
+
+        const patientsWithProgress = patients.map(patient => {
+            const cycleStart = patient.lastReevaluation || patient.startDate;
+            const completedSessions = patient.appointments.filter(
+                apt => apt.status === "Realizado" && new Date(apt.date) >= new Date(cycleStart)
+            ).length;
+
+            return {
+                ...patient,
+                progress: {
+                    completedSessions,
+                    cycleStart,
+                }
+            };
+        });
+
+        return { success: true, data: patientsWithProgress };
     } catch (error) {
         console.error("Error fetching patients:", error);
         return { success: false, error: "Failed to fetch patients" };
@@ -71,7 +93,8 @@ export async function savePatient(data: any) {
             financialSource: rest.financialSource,
             insuranceName: rest.insuranceName,
             insuranceNumber: rest.insuranceNumber,
-            authorizationStatus: rest.authorizationStatus
+            authorizationStatus: rest.authorizationStatus,
+            imageUrl: rest.imageUrl || null,
             // Note: lastReevaluation is typically updated by the Assessment module, not this form directly, 
             // but we can allow it if needed. For now, we only save what's common.
         };

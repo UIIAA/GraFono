@@ -100,22 +100,50 @@ export async function getFinancialMetrics(range?: { from: Date; to: Date }) {
         let totalCapacity = 0;
         if (availabilityConfig) {
             const daysInInterval = eachDayOfInterval({ start: startCurrent, end: endCurrent });
-            const workingDaysList = JSON.parse(availabilityConfig.workingDays);
-            const dayMap: Record<number, string> = { 1: "MON", 2: "TUE", 3: "WED", 4: "THU", 5: "FRI", 6: "SAT", 0: "SUN" };
 
-            const validDays = daysInInterval.filter(d => workingDaysList.includes(dayMap[d.getDay()]));
+            // Granular Logic (Time Slots)
+            if (availabilityConfig.timeSlots && availabilityConfig.timeSlots.length > 5) { // Simple check if JSON is likely populated
+                const timeSlots = JSON.parse(availabilityConfig.timeSlots) as { day: string, active: boolean, slots: { start: string, end: string }[] }[];
+                const dayMap: Record<number, string> = { 1: "MON", 2: "TUE", 3: "WED", 4: "THU", 5: "FRI", 6: "SAT", 0: "SUN" };
 
-            const startH = parseInt(availabilityConfig.startHour.split(":")[0]);
-            const endH = parseInt(availabilityConfig.endHour.split(":")[0]);
-            let dailyHours = endH - startH;
+                daysInInterval.forEach(date => {
+                    const dayId = dayMap[date.getDay()];
+                    const dayConfig = timeSlots.find(d => d.day === dayId);
 
-            if (availabilityConfig.lunchStart && availabilityConfig.lunchEnd) {
-                const lStart = parseInt(availabilityConfig.lunchStart.split(":")[0]);
-                const lEnd = parseInt(availabilityConfig.lunchEnd.split(":")[0]);
-                dailyHours -= (lEnd - lStart);
+                    if (dayConfig && dayConfig.active) {
+                        dayConfig.slots.forEach(slot => {
+                            const [sH, sM] = slot.start.split(':').map(Number);
+                            const [eH, eM] = slot.end.split(':').map(Number);
+                            const startMins = sH * 60 + sM;
+                            const endMins = eH * 60 + eM;
+
+                            // Prevent negative if end < start (though UI validations should catch)
+                            const diff = Math.max(0, endMins - startMins);
+
+                            // Add hours
+                            totalCapacity += diff / 60;
+                        });
+                    }
+                });
+            } else {
+                // Legacy Logic (Fallback)
+                const workingDaysList = JSON.parse(availabilityConfig.workingDays);
+                const dayMap: Record<number, string> = { 1: "MON", 2: "TUE", 3: "WED", 4: "THU", 5: "FRI", 6: "SAT", 0: "SUN" };
+
+                const validDays = daysInInterval.filter(d => workingDaysList.includes(dayMap[d.getDay()]));
+
+                const startH = parseInt(availabilityConfig.startHour.split(":")[0]);
+                const endH = parseInt(availabilityConfig.endHour.split(":")[0]);
+                let dailyHours = endH - startH;
+
+                if (availabilityConfig.lunchStart && availabilityConfig.lunchEnd) {
+                    const lStart = parseInt(availabilityConfig.lunchStart.split(":")[0]);
+                    const lEnd = parseInt(availabilityConfig.lunchEnd.split(":")[0]);
+                    dailyHours -= (lEnd - lStart);
+                }
+
+                totalCapacity = validDays.length * dailyHours;
             }
-
-            totalCapacity = validDays.length * dailyHours;
         } else {
             const daysInInterval = eachDayOfInterval({ start: startCurrent, end: endCurrent });
             const workingDays = daysInInterval.filter(day => !isWeekend(day)).length;
@@ -291,3 +319,60 @@ export async function undoSettlement(id: string) {
     }
 }
 
+
+export async function getComplianceList(month: number, year: number) {
+    try {
+        const startDate = new Date(year, month, 1);
+        const endDate = endOfMonth(startDate);
+        const today = new Date();
+
+        // Fetch transactions due in this month OR (pending/overdue ones from previous months? 
+        // usually compliance list is for a specific period, but maybe we want all active issues?
+        // Let's stick to the requested month for now, or maybe open items up to this month?)
+        // The UI seems to navigate by month. Let's fetch for that month + any carry-over overdue?
+        // For simplicity and matching typical "monthly closure" views, let's fetch:
+        // 1. All transactions with dueDate in this month.
+        // 2. (Optional) Maybe all overdue transactions regardless of date? 
+        // Let's stick to the selected month's view based on the UI navigation.
+
+        const transactions = await db.transaction.findMany({
+            where: {
+                dueDate: {
+                    gte: startOfMonth(startDate),
+                    lte: endDate
+                },
+                flow: "INCOME" // Usually compliance is about receiving money
+            },
+            include: {
+                patient: true
+            },
+            orderBy: {
+                dueDate: 'asc'
+            }
+        });
+
+        // Compute compliance status
+        const data = transactions.map((t: any) => {
+            let complianceStatus = "WAITING";
+
+            const isPaid = t.status === "PAID" || t.status === "PAGO" || t.status === "pago";
+            const isOverdue = !isPaid && new Date(t.dueDate) < startOfDay(today);
+
+            if (isPaid) {
+                complianceStatus = "PAID";
+            } else if (isOverdue) {
+                complianceStatus = "OVERDUE";
+            }
+
+            return {
+                ...t,
+                complianceStatus
+            };
+        });
+
+        return { success: true, data };
+    } catch (error) {
+        console.error("Error fetching compliance list:", error);
+        return { success: false, error: "Failed to fetch compliance list" };
+    }
+}

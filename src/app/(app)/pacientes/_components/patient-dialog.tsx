@@ -57,6 +57,7 @@ export function PatientDialog({
         insuranceName: patient?.insuranceName || "",
         insuranceNumber: patient?.insuranceNumber || "",
         authorizationStatus: patient?.authorizationStatus || "",
+        imageUrl: patient?.imageUrl || "",
     });
 
     // Mock history state - in a real app this would come from the patient object or an API
@@ -85,6 +86,7 @@ export function PatientDialog({
                 insuranceName: patient?.insuranceName || "",
                 insuranceNumber: patient?.insuranceNumber || "",
                 authorizationStatus: patient?.authorizationStatus || "",
+                imageUrl: patient?.imageUrl || "",
             });
             setHistory(patient?.history || [
                 { id: 1, date: "23/12/2024", type: "Contato", description: "Entrou em contato via WhatsApp interessado em terapia." },
@@ -163,6 +165,15 @@ export function PatientDialog({
                                     <Input
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="transition-all duration-300 hover:border-red-300 hover:bg-slate-50 focus:border-red-500 focus:ring-red-200"
+                                    />
+                                </div>
+                                <div className="space-y-2 group">
+                                    <Label className="group-hover:text-red-500 transition-colors">Foto do Paciente (URL)</Label>
+                                    <Input
+                                        placeholder="https://..."
+                                        value={formData.imageUrl}
+                                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                                         className="transition-all duration-300 hover:border-red-300 hover:bg-slate-50 focus:border-red-500 focus:ring-red-200"
                                     />
                                 </div>

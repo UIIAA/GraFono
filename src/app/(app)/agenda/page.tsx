@@ -72,7 +72,11 @@ export default function AgendaPage() {
             setPatients(patRes.data);
         }
         if (avRes) {
-            setAvailability(avRes);
+            setAvailability({
+                ...avRes,
+                lunchStart: avRes.lunchStart ?? undefined,
+                lunchEnd: avRes.lunchEnd ?? undefined
+            });
         }
     }
 
@@ -156,6 +160,35 @@ export default function AgendaPage() {
 
         const dayId = getDayId(date);
 
+        // Granular Validation (New System)
+        if (availability.timeSlots && availability.timeSlots.length > 0) {
+            const dayConfig = availability.timeSlots.find(d => d.day === dayId);
+
+            // If day is not configured or not active, it's unavailable
+            if (!dayConfig || !dayConfig.active) return false;
+
+            const slotMinutes = hour * 60;
+
+            // Check if hour is within ANY of the defined slots
+            // Slot: start "08:00" -> 480 min, end "12:00" -> 720 min
+            // We check if the *entire hour* (or at least the start of it) is allowed?
+            // Usually agenda slots are clicked by start time.
+
+            const isWithinSlot = dayConfig.slots.some(slot => {
+                const [startH, startM] = slot.start.split(':').map(Number);
+                const [endH, endM] = slot.end.split(':').map(Number);
+
+                const startTotal = startH * 60 + startM;
+                const endTotal = endH * 60 + endM;
+
+                // Available if slotMinutes >= start && slotMinutes < end
+                return slotMinutes >= startTotal && slotMinutes < endTotal;
+            });
+
+            return isWithinSlot;
+        }
+
+        // --- Fallback to Legacy Logic (for safety) ---
         // 1. Check Working Days
         if (!availability.workingDays.includes(dayId)) return false;
 
@@ -253,6 +286,23 @@ export default function AgendaPage() {
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassButton = "bg-white/80 hover:bg-white border border-red-100 backdrop-blur-sm text-slate-700 shadow-sm";
 
+    // Check if a specific day is a working day based on granular or legacy config
+    const isDayWorking = (date: Date) => {
+        if (!availability) return true; // Default to open if no config loading
+
+        const dayId = getDayId(date);
+
+        // Granular Check
+        if (availability.timeSlots && availability.timeSlots.length > 0) {
+            const dayConfig = availability.timeSlots.find(d => d.day === dayId);
+            // Must exist, be active, and have at least one slot
+            return !!(dayConfig && dayConfig.active && dayConfig.slots.length > 0);
+        }
+
+        // Legacy Fallback
+        return availability.workingDays.includes(dayId);
+    };
+
     // --- Render Month Grid ---
     const renderMonthView = () => {
         const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
@@ -260,16 +310,16 @@ export default function AgendaPage() {
         const calendarDays = eachDayOfInterval({ start, end });
 
         // Chunk into weeks
-        const weeks = [];
+        const weeks: Date[][] = [];
         for (let i = 0; i < calendarDays.length; i += 7) {
             weeks.push(calendarDays.slice(i, i + 7));
         }
 
         return (
-            <div className="flex-1 overflow-y-auto no-scrollbar bg-white/40 p-4">
-                <div className="grid grid-cols-7 gap-1 h-full auto-rows-fr">
+            <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+                <div className="grid grid-cols-7 gap-3 h-full auto-rows-fr">
                     {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(d => (
-                        <div key={d} className="text-center text-xs font-bold text-slate-400 py-2 uppercase">
+                        <div key={d} className="text-center text-xs font-bold text-slate-500 py-2 uppercase tracking-wider">
                             {d}
                         </div>
                     ))}
@@ -277,45 +327,73 @@ export default function AgendaPage() {
                         const isCurrentMonth = day.getMonth() === currentDate.getMonth();
                         const dailyApts = filteredAppointments.filter(a => isSameDay(new Date(a.date), day));
 
+                        const working = isDayWorking(day);
+                        const today = isToday(day);
+
+                        // Styles for Working vs Off days
+                        const containerStyles = working
+                            ? isCurrentMonth
+                                ? "bg-white shadow-sm border-slate-100 hover:shadow-md hover:border-red-100 hover:-translate-y-1 cursor-pointer"
+                                : "bg-white/60 border-slate-100 opacity-60 hover:opacity-100 cursor-pointer"
+                            : "bg-slate-100/50 border-transparent opacity-70 cursor-default"; // Off-day style
+
                         return (
                             <div
                                 key={day.toISOString()}
                                 className={cn(
-                                    "min-h-[100px] border border-white/50 rounded-lg p-2 flex flex-col gap-1 transition-colors hover:bg-white/60 cursor-pointer relative group",
-                                    isCurrentMonth ? "bg-white/30" : "bg-white/10 opacity-60",
-                                    isToday(day) && "ring-2 ring-red-200 bg-red-50/30"
+                                    "min-h-[110px] rounded-2xl p-3 flex flex-col gap-2 transition-all duration-200 relative group border",
+                                    containerStyles,
+                                    today && working && "ring-2 ring-red-400 ring-offset-2 bg-gradient-to-br from-white to-red-50 shadow-red-100",
+                                    today && !working && "ring-2 ring-slate-300 ring-offset-2" // Highlight today even if off
                                 )}
                                 onClick={() => {
-                                    // Switch to day view for this day? Or open dialog?
-                                    // Let's open dialog for the morning
-                                    handleSlotClick(day, 9);
+                                    if (working) handleSlotClick(day, 9);
                                 }}
                             >
-                                <span className={cn(
-                                    "text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1",
-                                    isToday(day) ? "bg-red-500 text-white shadow-sm" : "text-slate-600"
-                                )}>
-                                    {day.getDate()}
-                                </span>
+                                <div className="flex justify-between items-start">
+                                    <span className={cn(
+                                        "text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full",
+                                        today
+                                            ? "bg-red-500 text-white shadow-lg shadow-red-300"
+                                            : working
+                                                ? "text-slate-600 bg-slate-100/50 group-hover:bg-red-100/50 group-hover:text-red-600 transition-colors"
+                                                : "text-slate-400"
+                                    )}>
+                                        {day.getDate()}
+                                    </span>
 
-                                <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px] no-scrollbar">
+                                    {dailyApts.length > 0 && (
+                                        <span className={cn(
+                                            "text-[10px] font-bold px-1.5 rounded-full",
+                                            working ? "text-slate-400 bg-slate-100" : "text-slate-400 bg-white/50"
+                                        )}>
+                                            {dailyApts.length}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[80px] no-scrollbar mt-1">
                                     {dailyApts.slice(0, 3).map(apt => (
                                         <div
                                             key={apt.id}
-                                            className="text-[10px] truncate px-1.5 py-0.5 rounded-md text-white font-medium"
+                                            className={cn(
+                                                "text-[10px] truncate px-2 py-1.5 rounded-lg text-white font-bold shadow-sm transition-all",
+                                                working ? "hover:brightness-110" : "opacity-70 grayscale-[0.5]"
+                                            )}
                                             style={{
-                                                background: apt.type === 'Avaliação' ? '#ef4444' : '#3b82f6'
+                                                background: apt.type === 'Avaliação'
+                                                    ? "linear-gradient(135deg, rgba(239, 68, 68, 1) 0%, rgba(249, 115, 22, 1) 100%)"
+                                                    : "linear-gradient(135deg, rgba(59, 130, 246, 1) 0%, rgba(124, 58, 237, 1) 100%)"
                                             }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // Could open details
                                             }}
                                         >
                                             {apt.patient?.name || "Paciente"}
                                         </div>
                                     ))}
                                     {dailyApts.length > 3 && (
-                                        <span className="text-[9px] text-center text-slate-500 font-bold">
+                                        <span className="text-[10px] text-center text-slate-500 font-bold bg-slate-100/80 rounded-md py-0.5">
                                             +{dailyApts.length - 3} mais
                                         </span>
                                     )}
@@ -473,14 +551,22 @@ export default function AgendaPage() {
                                                 key={day.date.toISOString()}
                                                 onClick={() => handleSlotClick(day.date, hour)}
                                                 className={cn(
-                                                    "flex-1 border-r border-white/30 last:border-r-0 h-full relative cursor-pointer transition-colors",
-                                                    isToday(day.date) ? "bg-red-50/10" : "",
-                                                    available ? "hover:bg-white/40" : "bg-gray-100/50 cursor-not-allowed hover:bg-gray-200/50"
+                                                    "flex-1 border-r border-white/20 last:border-r-0 h-full relative cursor-pointer transition-all duration-300",
+                                                    // Base state
+                                                    "hover:backdrop-blur-none",
+
+                                                    // Available State (Pink/Orange Theme)
+                                                    available
+                                                        ? "bg-gradient-to-br from-white/40 to-white/10 hover:from-orange-100/40 hover:to-rose-100/40"
+                                                        : "bg-slate-100/90 cursor-not-allowed opacity-80 bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')]",
+
+                                                    // Today highlight
+                                                    isToday(day.date) && available ? "ring-inset ring-1 ring-rose-200/50 bg-rose-50/20" : ""
                                                 )}
                                             >
                                                 {!available && (
-                                                    <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                                        <Clock className="w-4 h-4 text-slate-400" />
+                                                    <div className="w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-20 transition-opacity">
+                                                        {/* Optional icon for blocked state on hover */}
                                                     </div>
                                                 )}
                                             </div>
