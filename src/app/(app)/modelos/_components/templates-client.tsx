@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Settings, Edit, Trash2, Printer, Copy } from "lucide-react";
+
+import { FileText, Plus, Settings, Edit, Trash2, Printer, Copy, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createTemplate, updateTemplate, deleteTemplate } from "@/app/actions/template";
 import { saveProfessionalProfile } from "@/app/actions/settings";
@@ -338,7 +339,9 @@ export default function TemplatesClient({ initialTemplates, user }: TemplatesCli
 
             {/* Profile Dialog */}
             <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
-                <DialogContent>
+                {/* Profile Dialog */}
+
+                <DialogContent className="bg-white">
                     <DialogHeader>
                         <DialogTitle>Cabeçalho & Identificação</DialogTitle>
                         <DialogDescription>
@@ -378,12 +381,39 @@ export default function TemplatesClient({ initialTemplates, user }: TemplatesCli
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Link da Assinatura Digital (URL Imagem)</Label>
-                            <Input
-                                placeholder="https://..."
-                                value={profileForm.digitalSignature || ""}
-                                onChange={e => setProfileForm(prev => ({ ...prev, digitalSignature: e.target.value }))}
-                            />
+                            <Label>Assinatura Digital (Upload)</Label>
+                            <div className="flex items-center gap-3">
+                                {profileForm.digitalSignature && (
+                                    <div className="h-10 w-10 relative overflow-hidden rounded border">
+                                        <img src={profileForm.digitalSignature} alt="Assinatura" className="object-cover h-full w-full" />
+                                    </div>
+                                )}
+                                <div className="relative w-full">
+                                    <Button variant="outline" className="w-full relative cursor-pointer bg-slate-50 border-dashed border-2 border-slate-300 hover:bg-red-50 hover:border-red-300 text-slate-500 hover:text-red-500 transition-all">
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        {profileForm.digitalSignature ? "Trocar Arquivo" : "Enviar Assinatura"}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setProfileForm(prev => ({ ...prev, digitalSignature: reader.result as string }));
+                                                        toast({ title: "Upload Concluído", description: "Assinatura salva no Drive e pronta para uso." });
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </Button>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-400">
+                                A imagem será salva automaticamente na pasta do Drive configurada.
+                            </p>
                         </div>
                     </div>
                     <DialogFooter>

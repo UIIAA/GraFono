@@ -9,7 +9,8 @@ import {
     Clock,
     TrendingUp,
     FileText,
-    Pencil
+    Pencil,
+    MessageCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,9 @@ interface PatientProps {
     id: string;
     name: string;
     status: string;
+    phone?: string;
+    financialSource?: string;
+    nextReevaluation?: Date | string;
     imageUrl?: string | null;
     progress?: {
         completedSessions: number;
@@ -70,7 +74,6 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
 
 
     // Calculate progress percentage (Mock target: 12 sessions)
-    // In a real app, target should be dynamic based on reevaluationInterval
     const targetSessions = 12;
     const completed = patient.progress?.completedSessions || 0;
     const progressPercent = Math.min((completed / targetSessions) * 100, 100);
@@ -87,6 +90,24 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
     const nextAppointment = patient.appointments?.find(
         (a) => new Date(a.date) > new Date()
     );
+
+    // Reevaluation Red Flag Logic
+    const isReevaluationOverdue = patient.nextReevaluation && new Date(patient.nextReevaluation) < new Date();
+
+    // WhatsApp Click
+    const handleWhatsApp = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!patient.phone) return;
+        const msg = `Olá, confirmamos a sessão do(a) ${patient.name}...`;
+        const url = `https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    };
+
+    // Badge Colors
+    const isParticular = patient.financialSource === 'PARTICULAR';
+    const badgeStyle = isParticular
+        ? "bg-emerald-50 text-emerald-700 border-emerald-100" // Green
+        : "bg-blue-50 text-blue-700 border-blue-100"; // Blue (Convênio)
 
     if (isDragging) {
         return (
@@ -107,24 +128,37 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
             className={cn(
                 "group relative overflow-hidden transition-all duration-200 hover:shadow-md border-primary/10",
                 "bg-white/80 backdrop-blur-sm", // Glass effect
-                isDragging && "ring-2 ring-primary rotate-2 shadow-xl opacity-90"
+                isDragging && "ring-2 ring-primary rotate-2 shadow-xl opacity-90",
+                isReevaluationOverdue && "border-l-4 border-l-red-500" // Red Flag Border
             )}
         >
             <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                        <AvatarImage src={patient.imageUrl || ""} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                            {initials}
-                        </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                            <AvatarImage src={patient.imageUrl || ""} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                {initials}
+                            </AvatarFallback>
+                        </Avatar>
+                        {isReevaluationOverdue && (
+                            <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" title="Reavaliação Pendente" />
+                        )}
+                    </div>
                     <div className="space-y-1">
                         <h4 className="font-semibold text-sm line-clamp-1 text-gray-900 leading-none">
                             {patient.name}
                         </h4>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-primary/5 text-primary-dark border-primary/10 hover:bg-primary/10">
-                            {patient.status}
-                        </Badge>
+                        <div className="flex gap-1">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-primary/5 text-primary-dark border-primary/10">
+                                {patient.status}
+                            </Badge>
+                            {patient.financialSource && (
+                                <Badge variant="outline" className={cn("text-[10px] px-1.5 h-5 border", badgeStyle)}>
+                                    {isParticular ? 'Particular' : 'Convênio'}
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <DropdownMenu>
@@ -143,13 +177,15 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                         </DropdownMenuItem>
+                        {patient.phone && (
+                            <DropdownMenuItem onClick={handleWhatsApp}>
+                                <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+                                WhatsApp
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onHistory?.(patient)}>
                             <TrendingUp className="mr-2 h-4 w-4" />
                             Histórico
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            Arquivar
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -161,7 +197,7 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
                         <span>Progresso do Tratamento</span>
                         <span>{completed} / {targetSessions}</span>
                     </div>
-                    <Progress value={progressPercent} className="h-1.5 bg-primary/10" indicatorClassName="bg-primary" />
+                    <Progress value={progressPercent} className="h-1.5 bg-primary/10" indicatorClassName={cn(isReevaluationOverdue ? "bg-red-500" : "bg-primary")} />
                 </div>
 
                 {/* Next Appointment / Info */}
@@ -176,7 +212,6 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
                     )}
                 </div>
             </CardContent>
-            {/* Hover actions extension could go here */}
         </Card>
     );
 }

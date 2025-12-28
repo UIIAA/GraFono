@@ -87,7 +87,7 @@ export function ReportDialog({ open, onOpenChange, patients, report, onSave }: R
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] bg-white/90 backdrop-blur-xl border border-white/50 max-h-[80vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[600px] bg-white/90 backdrop-blur-xl border border-white/50 max-h-[80vh] overflow-y-auto z-[100]">
                 <DialogHeader>
                     <DialogTitle>{report ? "Editar Relatório" : "Novo Relatório"}</DialogTitle>
                 </DialogHeader>

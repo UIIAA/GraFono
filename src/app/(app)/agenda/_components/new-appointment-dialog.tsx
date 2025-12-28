@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -17,7 +18,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createAppointment } from "@/app/actions/appointment";
+import { createAppointment, updateAppointment, deleteAppointment } from "@/app/actions/appointment";
 import { Patient } from "../../pacientes/types";
 
 interface NewAppointmentDialogProps {
@@ -28,6 +29,7 @@ interface NewAppointmentDialogProps {
     initialTime?: string;
     initialPatientId?: string;
     initialType?: string;
+    appointmentToEdit?: any;
     onSave: () => void;
 }
 
@@ -39,6 +41,7 @@ export function NewAppointmentDialog({
     initialTime,
     initialPatientId,
     initialType,
+    appointmentToEdit,
     onSave
 }: NewAppointmentDialogProps) {
     const [patientId, setPatientId] = useState("");
@@ -50,38 +53,73 @@ export function NewAppointmentDialog({
 
     useEffect(() => {
         if (open) {
-            if (initialDate) {
-                setDate(initialDate.toISOString().split('T')[0]);
+            if (appointmentToEdit) {
+                setPatientId(appointmentToEdit.patientId);
+                // Handle date correctly - ensure we have a Date object
+                const d = new Date(appointmentToEdit.date);
+                setDate(d.toISOString().split('T')[0]);
+                setTime(appointmentToEdit.time);
+                setType(appointmentToEdit.type);
+                setNotes(appointmentToEdit.notes || "");
             } else {
-                setDate(new Date().toISOString().split('T')[0]);
-            }
-            if (initialTime) {
-                setTime(initialTime);
-            } else {
-                setTime("08:00");
-            }
+                if (initialDate) {
+                    setDate(initialDate.toISOString().split('T')[0]);
+                } else {
+                    setDate(new Date().toISOString().split('T')[0]);
+                }
+                if (initialTime) {
+                    setTime(initialTime);
+                } else {
+                    setTime("08:00");
+                }
 
-            setPatientId(initialPatientId || "");
-            setType(initialType || "Avaliação");
-            setNotes("");
+                setPatientId(initialPatientId || "");
+                setType(initialType || "Avaliação");
+                setNotes("");
+            }
         }
-    }, [open, initialDate, initialTime, initialPatientId, initialType]);
+    }, [open, initialDate, initialTime, initialPatientId, initialType, appointmentToEdit]);
+
+    async function handleDelete() {
+        if (!appointmentToEdit?.id) return;
+        if (!confirm("Tem certeza que deseja excluir este agendamento?")) return;
+        setLoading(true);
+        try {
+            await deleteAppointment(appointmentToEdit.id);
+            onSave();
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Error deleting", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     async function handleSave() {
         if (!patientId || !date || !time) return;
         setLoading(true);
         try {
-            await createAppointment({
-                date: new Date(date),
-                time,
-                patientId,
-                type,
-                notes
-            });
+            if (appointmentToEdit) {
+                await updateAppointment(appointmentToEdit.id, {
+                    date: new Date(date + 'T12:00:00'),
+                    time,
+                    patientId,
+                    type,
+                    notes
+                });
+            } else {
+                await createAppointment({
+                    date: new Date(date + 'T12:00:00'),
+                    time,
+                    patientId,
+                    type,
+                    notes
+                });
+            }
             onSave();
             onOpenChange(false);
         } catch (error) {
-            console.error("Failed to create appointment", error);
+            console.error("Failed to save appointment", error);
         } finally {
             setLoading(false);
         }
@@ -90,8 +128,19 @@ export function NewAppointmentDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px] bg-white border border-slate-100 shadow-xl">
-                <DialogHeader>
-                    <DialogTitle>Novo Agendamento</DialogTitle>
+                <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <DialogTitle>{appointmentToEdit ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
+                    {appointmentToEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={handleDelete}
+                            title="Excluir Agendamento"
+                        >
+                            <Trash2 className="h-5 w-5" />
+                        </Button>
+                    )}
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -152,11 +201,23 @@ export function NewAppointmentDialog({
                         />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                    <Button onClick={handleSave} disabled={loading} className="bg-red-500 hover:bg-red-600 text-white">
-                        {loading ? "Agendando..." : "Confirmar Agendamento"}
-                    </Button>
+                <DialogFooter className="flex justify-between sm:justify-between">
+                    {appointmentToEdit && (
+                        <Button variant="ghost" className="text-red-500 hover:bg-red-50 hover:text-red-700 sm:hidden" onClick={handleDelete}>
+                            Excluir
+                        </Button>
+                    )}
+                    {appointmentToEdit && (
+                        <Button variant="destructive" className="hidden sm:inline-flex" onClick={handleDelete} disabled={loading}>
+                            Excluir
+                        </Button>
+                    )}
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                        <Button onClick={handleSave} disabled={loading} className="bg-red-500 hover:bg-red-600 text-white">
+                            {loading ? "Salvando..." : (appointmentToEdit ? "Salvar Alterações" : "Confirmar Agendamento")}
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

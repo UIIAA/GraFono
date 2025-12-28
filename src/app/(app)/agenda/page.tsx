@@ -1,6 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,7 @@ const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 to 19:00
 
 type ViewMode = 'day' | 'week' | 'month';
 
-export default function AgendaPage() {
+function AgendaContent() {
     const { toast } = useToast();
     const searchParams = useSearchParams();
 
@@ -54,6 +55,7 @@ export default function AgendaPage() {
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
     const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | undefined>(undefined);
+    const [editingAppointment, setEditingAppointment] = useState<any | undefined>(undefined);
     const [availability, setAvailability] = useState<AvailabilityData | null>(null);
 
     const [presetPatientId, setPresetPatientId] = useState<string | undefined>(undefined);
@@ -239,7 +241,6 @@ export default function AgendaPage() {
     const getEventStyle = (apt: any, daysInView: any[]) => {
         const aptDate = new Date(apt.date);
 
-        // Find which column this event belongs to
         const dayIndex = daysInView.findIndex(d => isSameDay(d.date, aptDate));
         if (dayIndex === -1) return { display: 'none' };
 
@@ -247,38 +248,42 @@ export default function AgendaPage() {
         const hour = parseInt(hourStr.split(':')[0]);
         const minutes = parseInt(hourStr.split(':')[1] || "0");
 
-        // Vertical pos
         const top = (hour - 8) * 80 + (minutes / 60) * 80;
 
-        // Simplify width calc
-        // Container width has 4rem padding (time col)
-        // We use flex-1 for columns so we can use percentages if we account for the offset
-        // But absolute positioning needs exact left/width relative to the container
-        // Let's rely on mapped percentage based on column count
+        // Clean Modern Look Colors
+        let bgClass = "bg-slate-100 text-slate-700 border-l-4 border-slate-400"; // Default
 
-        const colWidthPercent = 100 / daysInView.length;
-
-        // Need to account for the Time Column (w-16 = 4rem = 64px approx)
-        // Since the grid body has the time column and then the days flex row
-        // The events need to be positioned relative to the DAY COLUMNS container if possible
-        // But our structure is: TimeColumn + loop(DayCols). 
-        // Events are children of "Grid Body" which contains TimeLines.
-        // It's trickier to position absolutely over multiple flex columns. 
-        // Fix: Render events INSIDE the day column? No, they span time.
-        // Fix: Render events in an overlay layer on top of the grid.
-
-        // Calculating left/width relative to the Grid Body container (which includes Time Col w-16)
-        // Time Col is w-16 (64px). The rest is shared equally.
+        switch (apt.type) {
+            case 'Avaliação':
+            case 'Avaliação Inicial':
+                bgClass = "bg-indigo-100 text-indigo-700 border-l-4 border-indigo-500 hover:bg-indigo-200";
+                break;
+            case 'Terapia':
+            case 'Sessão':
+                bgClass = "bg-blue-100 text-blue-700 border-l-4 border-blue-500 hover:bg-blue-200";
+                break;
+            case 'Reunião':
+            case 'Reunião com Pais':
+                bgClass = "bg-sky-100 text-sky-700 border-l-4 border-sky-500 hover:bg-sky-200";
+                break;
+            case 'Exame':
+                bgClass = "bg-emerald-100 text-emerald-700 border-l-4 border-emerald-500 hover:bg-emerald-200";
+                break;
+            case 'Sessão de Devolutiva':
+                bgClass = "bg-amber-100 text-amber-700 border-l-4 border-amber-500 hover:bg-amber-200";
+                break;
+            default:
+                bgClass = "bg-slate-100 text-slate-700 border-l-4 border-slate-400 hover:bg-slate-200";
+        }
 
         return {
-            top: `${top}px`,
-            left: `calc(4rem + (100% - 4rem) * ${dayIndex} / ${daysInView.length})`,
-            width: `calc((100% - 4rem) / ${daysInView.length} - 8px)`, // -8px for margin
-            height: '74px',
-            background: apt.type === 'Avaliação'
-                ? "linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)"
-                : "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
-            backdropFilter: "blur(4px)"
+            style: {
+                top: `${top}px`,
+                left: `calc(4rem + (100% - 4rem) * ${dayIndex} / ${daysInView.length})`,
+                width: `calc((100% - 4rem) / ${daysInView.length} - 8px)`,
+                height: '74px',
+            },
+            className: cn("absolute m-1 rounded-md p-2 cursor-pointer transition-all z-20 shadow-sm text-xs font-semibold leading-tight flex flex-col gap-1", bgClass)
         };
     };
 
@@ -447,6 +452,7 @@ export default function AgendaPage() {
                     <Button
                         onClick={() => {
                             setSelectedSlot(undefined);
+                            setEditingAppointment(undefined);
                             setIsDialogOpen(true);
                         }}
                         className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-10 px-4 transition-transform hover:scale-105"
@@ -576,31 +582,28 @@ export default function AgendaPage() {
                             ))}
 
                             {/* DB Events */}
-                            {filteredAppointments.map(apt => (
-                                <div
-                                    key={apt.id}
-                                    className="absolute m-1 rounded-2xl p-3 cursor-pointer hover:scale-[1.02] transition-all z-20 shadow-md group border border-white/20"
-                                    style={getEventStyle(apt, displayedDays)}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Edit logic could go here
-                                    }}
-                                >
-                                    <div className="flex justify-between items-start text-white">
-                                        <span className="font-bold text-xs">{apt.type || "Consulta"}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Avatar className="h-6 w-6 border-2 border-white/30">
-                                            <AvatarFallback className="bg-white/20 text-white text-[9px]">
-                                                {apt.patient?.name?.substring(0, 2).toUpperCase() || "PT"}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-white/90 text-[10px] font-medium">
+                            {filteredAppointments.map(apt => {
+                                const { style, className } = getEventStyle(apt, displayedDays);
+                                return (
+                                    <div
+                                        key={apt.id}
+                                        className={className}
+                                        style={style}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingAppointment(apt);
+                                            setIsDialogOpen(true);
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <span>{apt.type || "Consulta"}</span>
+                                        </div>
+                                        <div className="font-normal opacity-90 truncate">
                                             {apt.patient?.name || "Paciente"}
-                                        </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </>
                 )}
@@ -608,12 +611,16 @@ export default function AgendaPage() {
 
             <NewAppointmentDialog
                 open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) setEditingAppointment(undefined);
+                }}
                 patients={patients}
                 initialDate={selectedSlot?.date}
                 initialTime={selectedSlot?.time}
                 initialPatientId={presetPatientId}
                 initialType={presetType}
+                appointmentToEdit={editingAppointment}
                 onSave={loadData}
             />
 
@@ -632,6 +639,14 @@ export default function AgendaPage() {
                 }}
             />
         </div>
+    );
+}
+
+export default function AgendaPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-slate-500">Carregando Agenda...</div>}>
+            <AgendaContent />
+        </Suspense>
     );
 }
 

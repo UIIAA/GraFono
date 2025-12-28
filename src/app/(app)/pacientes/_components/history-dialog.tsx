@@ -60,56 +60,58 @@ export function HistoryDialog({ patient, open, onOpenChange }: HistoryDialogProp
     }
 
     return (
-        <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border border-red-100 rounded-2xl shadow-2xl">
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-red-600">
-                    <History className="w-5 h-5" />
-                    Histórico do Paciente
-                </DialogTitle>
-                <p className="text-sm text-slate-500">
-                    Pontos relevantes e observações para {patient.name}
-                </p>
-            </DialogHeader>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[500px] bg-white/95 backdrop-blur-xl border border-red-100 rounded-2xl shadow-2xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-red-600">
+                        <History className="w-5 h-5" />
+                        Histórico do Paciente
+                    </DialogTitle>
+                    <p className="text-sm text-slate-500">
+                        Pontos relevantes e observações para {patient.name}
+                    </p>
+                </DialogHeader>
 
-            <div className="flex gap-2 mt-4">
-                <Input
-                    placeholder="Adicionar novo ponto relevante..."
-                    value={newPoint}
-                    onChange={(e) => setNewPoint(e.target.value)}
-                    className="flex-1 bg-white/50 border-red-100 focus:bg-white"
-                    onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                />
-                <Button
-                    onClick={handleAdd}
-                    disabled={adding || !newPoint.trim()}
-                    className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
-                >
-                    {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                </Button>
-            </div>
+                <div className="flex gap-2 mt-4">
+                    <Input
+                        placeholder="Adicionar novo ponto relevante..."
+                        value={newPoint}
+                        onChange={(e) => setNewPoint(e.target.value)}
+                        className="flex-1 bg-white/50 border-red-100 focus:bg-white"
+                        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                    />
+                    <Button
+                        onClick={handleAdd}
+                        disabled={adding || !newPoint.trim()}
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
+                    >
+                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    </Button>
+                </div>
 
-            <ScrollArea className="h-[300px] pr-4 mt-4">
-                {loading ? (
-                    <div className="flex justify-center p-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-red-500" />
-                    </div>
-                ) : history.length === 0 ? (
-                    <div className="text-center text-slate-400 py-8 text-sm">
-                        Nenhum histórico registrado.
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {history.map((item) => (
-                            <div key={item.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
-                                <p className="text-slate-700">{item.content}</p>
-                                <p className="text-[10px] text-slate-400 mt-1 text-right">
-                                    {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </ScrollArea>
-        </DialogContent>
+                <ScrollArea className="h-[300px] pr-4 mt-4">
+                    {loading ? (
+                        <div className="flex justify-center p-8">
+                            <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                        </div>
+                    ) : history.length === 0 ? (
+                        <div className="text-center text-slate-400 py-8 text-sm">
+                            Nenhum histórico registrado.
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {history.map((item) => (
+                                <div key={item.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
+                                    <p className="text-slate-700">{item.content}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1 text-right">
+                                        {new Date(item.date).toLocaleDateString('pt-BR')} às {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
     );
 }

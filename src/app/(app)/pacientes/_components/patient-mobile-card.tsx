@@ -15,6 +15,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 
 interface PatientMobileCardProps {
     patient: any;
@@ -32,12 +33,21 @@ export function PatientMobileCard({ patient, onEdit, onHistory }: PatientMobileC
         return `https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     };
 
+    const isReevaluationOverdue = patient.nextReevaluation && new Date(patient.nextReevaluation) < new Date();
+
     return (
-        <div className={cn("rounded-2xl border p-4 shadow-sm bg-white mb-4 relative", statusColor)}>
+        <div className={cn(
+            "rounded-2xl border p-4 shadow-sm bg-white mb-4 relative transition-all",
+            statusColor,
+            isReevaluationOverdue && "border-l-4 border-l-red-500 bg-red-50/10"
+        )}>
             <div className="flex justify-between items-start mb-3">
                 <div>
-                    <h3 className={cn("font-bold text-lg", isParticular ? "text-emerald-900" : "text-sky-900")}>
+                    <h3 className={cn("font-bold text-lg flex items-center gap-2", isParticular ? "text-emerald-900" : "text-sky-900")}>
                         {patient.name}
+                        {isReevaluationOverdue && (
+                            <AlertCircle className="h-5 w-5 text-red-500 animate-pulse" />
+                        )}
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className={cn("text-white border-0", badgeColor)}>

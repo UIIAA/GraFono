@@ -1,4 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
 
 import { useState, useEffect } from "react";
 import {
@@ -29,7 +32,6 @@ import {
     Filter,
     MoreHorizontal,
     GripVertical,
-    MessageSquare,
     User
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -79,7 +81,7 @@ const defaultCols: Column[] = [
 
 import { useSearchParams } from "next/navigation";
 
-export default function PacientesPage() {
+function PacientesContent() {
     const searchParams = useSearchParams();
     const shouldOpenNew = searchParams.get("new") === "true";
 
@@ -97,49 +99,7 @@ export default function PacientesPage() {
         setIsDialogOpen(true);
     };
 
-    useEffect(() => {
-        async function loadPatients() {
-            try {
-                const result = await getPatients();
-                if (result.success && result.data) {
-                    const dbPatients = result.data.map((p: any) => ({
-                        id: p.id,
-                        name: p.name,
-                        email: p.email || "",
-                        phone: p.phone || "",
-                        status: p.status,
-                        history: [],
-                        negotiatedValue: p.negotiatedValue || 0,
-                        motherName: p.motherName,
-                        fatherName: p.fatherName,
-                        observations: p.observations,
-                        address: p.address,
-                        dob: p.dateOfBirth,
-                    }));
-                    setPatients(dbPatients);
 
-                    const dbTasks = dbPatients.map((p: any) => {
-                        let colId = "aguardando";
-                        if (p.status === "Em Avaliação" || p.status === "em_avaliacao" || p.status === "Em avaliação") colId = "em_avaliacao";
-                        if (p.status === "Em Terapia" || p.status === "Em Tratamento" || p.status === "em_andamento") colId = "em_andamento";
-                        if (p.status === "Alta" || p.status === "alta") colId = "alta";
-
-                        return {
-                            id: p.id,
-                            columnId: colId,
-                            content: p.name,
-                            patientId: p.id,
-                            tags: [p.status],
-                        };
-                    });
-                    setTasks(dbTasks);
-                }
-            } catch (error) {
-                console.error("Failed to load patients", error);
-            }
-        }
-        loadPatients();
-    }, []);
 
     useEffect(() => {
         async function loadPatients() {
@@ -160,6 +120,7 @@ export default function PacientesPage() {
                     address: p.address,
                     dob: p.dateOfBirth,
                     financialSource: p.financialSource, // Mapped
+                    nextReevaluation: p.nextReevaluation,
                 }));
                 setPatients(dbPatients);
 
@@ -259,6 +220,7 @@ export default function PacientesPage() {
                     observations: p.observations,
                     address: p.address,
                     dob: p.dateOfBirth,
+                    nextReevaluation: p.nextReevaluation,
                 }));
                 setPatients(dbPatients);
 
@@ -309,8 +271,13 @@ export default function PacientesPage() {
             return;
         }
 
-        if (event.active.data.current?.type === "Task") {
-            setActiveTask(event.active.data.current.task);
+        // Handle both Task and Patient types for robustness
+        if (event.active.data.current?.type === "Task" || event.active.data.current?.type === "Patient") {
+            // If it's a Patient type, we might need to find the corresponding task or just use the patient data
+            // But activeTask state expects a Task. Let's find the task that corresponds to this patient.
+            const patientId = event.active.data.current.patient?.id || event.active.data.current.task?.patientId;
+            const task = tasks.find(t => t.patientId === patientId);
+            if (task) setActiveTask(task);
             return;
         }
     }
@@ -325,7 +292,7 @@ export default function PacientesPage() {
         const activeId = active.id;
         const overId = over.id;
 
-        if (activeId === overId) return;
+        if (activeId === activeId && activeId === overId) return; // Basic self check
 
         const isActiveAColumn = active.data.current?.type === "Column";
         if (isActiveAColumn) {
@@ -341,15 +308,13 @@ export default function PacientesPage() {
             return;
         }
 
-        // Handle Task Drag End - Persist to DB
-        const isActiveATask = active.data.current?.type === "Task";
+        // Handle Task/Patient Drag End
+        const isActiveATask = active.data.current?.type === "Task" || active.data.current?.type === "Patient";
         if (isActiveATask) {
             let newStatus = "Aguardando";
 
-            // Determine new column ID
-            // overId could be a column OR a task in a column
             const isOverAColumn = over.data.current?.type === "Column";
-            const isOverATask = over.data.current?.type === "Task";
+            const isOverATask = over.data.current?.type === "Task" || over.data.current?.type === "Patient";
 
             let targetColumnId = "aguardando";
 
@@ -357,6 +322,7 @@ export default function PacientesPage() {
                 targetColumnId = String(overId);
             } else if (isOverATask) {
                 // Find the column of the task we dropped over
+                // Note: overId is usually the task ID (which we mapped to patient ID)
                 const overTask = tasks.find(t => t.id === overId);
                 if (overTask) targetColumnId = overTask.columnId;
             }
@@ -364,17 +330,36 @@ export default function PacientesPage() {
             // Map Column ID to DB Status
             if (targetColumnId === "aguardando") newStatus = "Aguardando";
             if (targetColumnId === "em_avaliacao") newStatus = "Em avaliação";
-            if (targetColumnId === "em_andamento") newStatus = "Em Tratamento"; // DB value
+            if (targetColumnId === "em_andamento") newStatus = "Em Tratamento";
             if (targetColumnId === "alta") newStatus = "Alta";
 
+            // Identify Patient ID
+            const patientId = active.data.current?.patient?.id || active.data.current?.task?.patientId;
+
             // Call Server Action
-            updatePatientStatus(String(active.data.current?.task?.patientId), newStatus)
-                .then(res => {
-                    if (!res.success) {
-                        console.error("Failed to update status");
-                        // Revert? For now assume success or reload.
-                    }
-                });
+            if (patientId) {
+                updatePatientStatus(String(patientId), newStatus)
+                    .then(res => {
+                        if (!res.success) {
+                            console.error("Failed to update status");
+                        } else {
+                            // Optimistically update local state to avoid jumpiness
+                            setTasks((tasks) => {
+                                const activeIndex = tasks.findIndex((t) => t.id === activeId);
+                                if (activeIndex !== -1) {
+                                    const newTasks = [...tasks];
+                                    newTasks[activeIndex].columnId = targetColumnId;
+                                    // Also update the tag/status locally
+                                    newTasks[activeIndex].tags = [newStatus];
+                                    // Update inner patient object status too for consistency
+                                    newTasks[activeIndex].patient.status = newStatus;
+                                    return newTasks;
+                                }
+                                return tasks;
+                            });
+                        }
+                    });
+            }
         }
     }
 
@@ -387,9 +372,9 @@ export default function PacientesPage() {
 
         if (activeId === overId) return;
 
-        const isActiveATask = active.data.current?.type === "Task";
-        const isOverATask = over.data.current?.type === "Task";
-        const isOverAColumn = over.data.current?.type === "Column"; // This handles dropping on empty columns
+        const isActiveATask = active.data.current?.type === "Task" || active.data.current?.type === "Patient";
+        const isOverATask = over.data.current?.type === "Task" || over.data.current?.type === "Patient";
+        const isOverAColumn = over.data.current?.type === "Column";
 
         if (!isActiveATask) return;
 
@@ -399,17 +384,17 @@ export default function PacientesPage() {
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);
                 const overIndex = tasks.findIndex((t) => t.id === overId);
 
+                if (activeIndex === -1 || overIndex === -1) return tasks;
+
                 if (tasks[activeIndex].columnId !== tasks[overIndex].columnId) {
                     const newTasks = [...tasks];
                     newTasks[activeIndex].columnId = tasks[overIndex].columnId;
-                    // Simple array move without importing arrayMove
                     const [removed] = newTasks.splice(activeIndex, 1);
                     newTasks.splice(overIndex, 0, removed);
                     return newTasks;
                 }
 
                 const newTasks = [...tasks];
-                // Simple array move
                 const [removed] = newTasks.splice(activeIndex, 1);
                 newTasks.splice(overIndex, 0, removed);
                 return newTasks;
@@ -420,6 +405,8 @@ export default function PacientesPage() {
         if (isActiveATask && isOverAColumn) {
             setTasks((tasks) => {
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);
+                if (activeIndex === -1) return tasks;
+
                 if (tasks[activeIndex].columnId !== overId) {
                     const newTasks = [...tasks];
                     newTasks[activeIndex].columnId = String(overId);
@@ -429,6 +416,16 @@ export default function PacientesPage() {
             });
         }
     }
+
+    // Filter Logic
+    const filteredTasks = tasks.filter((task) => {
+        if (!searchQuery) return true;
+        const lowerQuery = searchQuery.toLowerCase();
+        return (
+            task.content.toLowerCase().includes(lowerQuery) ||
+            task.patient.email.toLowerCase().includes(lowerQuery)
+        );
+    });
 
     // Media Query Hook equivalent (simpler implementation for now)
     const [isMobile, setIsMobile] = useState(false);
@@ -537,6 +534,73 @@ export default function PacientesPage() {
                             );
                         })}
                     </div>
+                ) : viewMode === "list" ? (
+                    <div className="flex-1 overflow-y-auto relative z-10 px-6 pb-20">
+                        <div className="rounded-2xl border border-red-100 bg-white/60 backdrop-blur-sm overflow-hidden shadow-sm">
+                            <table className="w-full text-sm text-left">
+                                <thead>
+                                    <tr className="border-b border-red-100 bg-red-50/50 text-slate-500">
+                                        <th className="px-4 py-3 font-semibold">Paciente</th>
+                                        <th className="px-4 py-3 font-semibold">Status</th>
+                                        <th className="px-4 py-3 font-semibold">Contato</th>
+                                        <th className="px-4 py-3 font-semibold">Origem</th>
+                                        <th className="px-4 py-3 font-semibold text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-red-100">
+                                    {filteredTasks.map((task) => (
+                                        <tr key={task.id} className="hover:bg-white/50 transition-colors group">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-9 w-9 border border-white shadow-sm">
+                                                        <AvatarFallback className="bg-red-100 text-red-600 text-xs">
+                                                            {task.patient.name.slice(0, 2).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <div className="font-bold text-slate-800">{task.patient.name}</div>
+                                                        <div className="text-xs text-slate-500">ID: {task.patient.id.slice(-4)}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-white border border-slate-100 text-slate-600 shadow-sm">
+                                                    {task.patient.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-600">
+                                                {task.patient.phone || "-"}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {task.patient.financialSource === 'PARTICULAR' ? (
+                                                    <span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 text-xs">Particular</span>
+                                                ) : (
+                                                    <span className="text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 text-xs">Convênio</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white hover:text-indigo-600" onClick={() => handleEditPatient(task.patient.id)}>
+                                                        <User className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white hover:text-indigo-600" onClick={() => handleHistory(task.patient.id)}>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredTasks.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                                                Nenhum paciente encontrado.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex-1 overflow-x-auto overflow-y-hidden relative z-10">
                         <DndContext
@@ -552,7 +616,7 @@ export default function PacientesPage() {
                                     <BoardColumn
                                         key={col.id}
                                         column={col}
-                                        tasks={tasks.filter((task) => task.columnId === col.id)}
+                                        tasks={filteredTasks.filter((task) => task.columnId === col.id)}
                                         onEdit={(task) => handleEditPatient(task.patientId)}
                                         onHistory={(task) => handleHistory(task.patientId)}
                                     />
@@ -599,5 +663,13 @@ export default function PacientesPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function PacientesPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-slate-500">Carregando Pacientes...</div>}>
+            <PacientesContent />
+        </Suspense>
     );
 }

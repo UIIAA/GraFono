@@ -199,6 +199,14 @@ export async function getTransactions(filters?: any) {
         if (filters?.status) where.status = filters.status;
         if (filters?.source) where.source = filters.source;
 
+        // Date Range Filter
+        if (filters?.from && filters?.to) {
+            where.dueDate = {
+                gte: filters.from,
+                lte: filters.to
+            };
+        }
+
         const transactions = await db.transaction.findMany({
             where,
             orderBy: { dueDate: 'asc' },
@@ -374,5 +382,55 @@ export async function getComplianceList(month: number, year: number) {
     } catch (error) {
         console.error("Error fetching compliance list:", error);
         return { success: false, error: "Failed to fetch compliance list" };
+    }
+}
+
+export async function generateMonthlyCharges(month: number, year: number) {
+    try {
+        const activeStatuses = ["Em tratamento", "Em Terapia", "Em Tratamento", "em_andamento"];
+        const patients = await db.patient.findMany({
+            where: {
+                status: { in: activeStatuses },
+                negotiatedValue: { gt: 0 }
+            }
+        });
+
+        let count = 0;
+        const dueDate = new Date(year, month, 10);
+
+        for (const patient of patients) {
+            const existing = await db.transaction.findFirst({
+                where: {
+                    patientId: patient.id,
+                    dueDate: {
+                        gte: startOfMonth(dueDate),
+                        lte: endOfMonth(dueDate)
+                    },
+                    description: { contains: "Mensalidade" }
+                }
+            });
+
+            if (!existing) {
+                await db.transaction.create({
+                    data: {
+                        description: `Mensalidade - ${month + 1}/${year}`,
+                        amount: patient.negotiatedValue || 0,
+                        type: "Mensalidade",
+                        flow: "INCOME",
+                        category: "Consultas",
+                        source: patient.financialSource || "PARTICULAR",
+                        status: "PENDING",
+                        dueDate: dueDate,
+                        patientId: patient.id
+                    }
+                });
+                count++;
+            }
+        }
+        revalidatePath("/financeiro/adimplencia");
+        return { success: true, count };
+    } catch (error) {
+        console.error("Error generating charges:", error);
+        return { success: false, error: "Failed to generate charges" };
     }
 }

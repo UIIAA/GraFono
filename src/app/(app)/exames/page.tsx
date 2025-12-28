@@ -18,6 +18,12 @@ import {
     AlertCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 
@@ -27,6 +33,10 @@ export default function ExamesPage() {
     const [patients, setPatients] = useState<any[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingExam, setEditingExam] = useState<any>(undefined);
+
+    // Filters
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     async function loadData() {
         try {
@@ -45,6 +55,17 @@ export default function ExamesPage() {
     useEffect(() => {
         loadData();
     }, []);
+
+    // Filter Logic
+    const filteredExams = exams.filter(item => {
+        const matchesSearch = searchQuery === "" ||
+            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.patient?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesStatus = statusFilter === null || item.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
 
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassInput = "bg-white/50 border-red-100 focus:bg-white/80 transition-all";
@@ -96,13 +117,25 @@ export default function ExamesPage() {
                         <Input
                             placeholder="Buscar exames..."
                             className={`pl-10 h-11 rounded-xl ${glassInput}`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
-                        <Button variant="ghost" className="text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Status
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className={`text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl ${statusFilter ? 'bg-red-50 text-red-600' : ''}`}>
+                                    <Filter className="mr-2 h-4 w-4" />
+                                    {statusFilter || "Status"}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setStatusFilter(null)}>Todos</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter("Pendente")}>Pendente</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter("Agendado")}>Agendado</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter("Finalizado")}>Finalizado</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
@@ -115,9 +148,9 @@ export default function ExamesPage() {
                     </div>
 
                     <div className="divide-y divide-white/40 bg-white/20">
-                        {exams.length === 0 ? (
+                        {filteredExams.length === 0 ? (
                             <div className="p-8 text-center text-slate-500">Nenhum exame encontrado.</div>
-                        ) : exams.map((item) => (
+                        ) : filteredExams.map((item) => (
                             <div
                                 key={item.id}
                                 className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer"

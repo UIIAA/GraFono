@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { db as prisma } from "@/lib/db";
 import { EvolutionForm } from "./_components/evolution-form";
 import { getMonthlyFinancialStatus } from "@/app/actions/evolution";
 import { notFound } from "next/navigation";

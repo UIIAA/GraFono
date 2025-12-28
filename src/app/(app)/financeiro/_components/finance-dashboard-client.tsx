@@ -49,7 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
-import { getFinancialMetrics } from "@/app/actions/finance";
+import { getFinancialMetrics, getTransactions } from "@/app/actions/finance";
 
 export default function FinanceDashboardClient({ initialMetrics, initialTransactions, patients }: any) {
     const { toast } = useToast();
@@ -78,16 +78,32 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
     });
 
     useEffect(() => {
-        async function loadMetrics() {
+        async function loadData() {
             if (date?.from && date?.to) {
-                const res = await getFinancialMetrics({ from: date.from, to: date.to });
-                if (res.success && res.data) {
-                    setMetrics(res.data);
+                // Fetch Metrics
+                const metricsRes = await getFinancialMetrics({ from: date.from, to: date.to });
+                if (metricsRes.success && metricsRes.data) {
+                    setMetrics(metricsRes.data);
+                }
+
+                // Fetch Transactions
+                const txRes = await getTransactions({
+                    from: date.from,
+                    to: date.to,
+                    status: statusFilter !== 'all' ? statusFilter : undefined
+                    // Note: Type/Source filtering is done client-side in the other useEffect, 
+                    // but we should ideally move all to server or keep hybrid. 
+                    // For now, let's fetch based on Date and let Client filter Type/Text.
+                });
+
+                if (txRes.success && txRes.data) {
+                    setTransactions(txRes.data);
+                    // Filter logic will run automatically via the other useEffect dependency on 'transactions'
                 }
             }
         }
-        loadMetrics();
-    }, [date]);
+        loadData();
+    }, [date]); // dependency on 'date' triggers reload
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 }).format(val / 100);

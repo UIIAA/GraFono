@@ -10,9 +10,73 @@ import {
     Download,
     Activity
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added CardDescription
+import { useState } from "react";
+import { generateMetricsInsights } from "@/app/actions/ai";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Loader2, Lightbulb } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function MetricasPage() {
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [aiInsights, setAiInsights] = useState<any>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Mock Data (Structured for Export/AI)
+    const metricsData = {
+        activePatients: 124,
+        sessions: 543,
+        revenue: "R$ 42.5k",
+        attendanceRate: "94.2%",
+        pathologies: [
+            { label: "Atraso de Linguagem", val: 35 },
+            { label: "Trocas Fonológicas", val: 25 },
+            { label: "Motricidade Orofacial", val: 20 },
+            { label: "Voz / Disfonia", val: 15 },
+            { label: "Outros", val: 5 },
+        ]
+    };
+
+    const handleExport = () => {
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + "Métrica,Valor\n"
+            + `Pacientes Ativos,${metricsData.activePatients}\n`
+            + `Sessões Realizadas,${metricsData.sessions}\n`
+            + `Faturamento,${metricsData.revenue}\n`
+            + `Taxa de Presença,${metricsData.attendanceRate}\n`
+            + "Patologias,%\n"
+            + metricsData.pathologies.map(p => `${p.label},${p.val}%`).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "metricas_grafono.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({ title: "Exportado", description: "O arquivo CSV foi baixado." });
+    };
+
+    const handleAnalyze = async () => {
+        setLoading(true);
+        try {
+            const res = await generateMetricsInsights(metricsData);
+            if (res.success && res.data) {
+                setAiInsights(res.data);
+                setIsDialogOpen(true);
+            } else {
+                toast({ title: "Erro", description: "Não foi possível gerar insights.", variant: "destructive" });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Erro", description: "Falha na IA.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
     const glassPanel = "bg-white/50 backdrop-blur-sm border border-red-100 rounded-2xl";
@@ -39,9 +103,19 @@ export default function MetricasPage() {
                         <p className="text-slate-500">Análise de Desempenho Clínico</p>
                     </div>
                 </div>
-                <Button variant="outline" className="bg-white/50 border-white/60 hover:bg-white text-slate-700 rounded-xl">
-                    <Download className="mr-2 h-4 w-4" /> Exportar Dados
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={handleAnalyze}
+                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-200 transition-all hover:scale-105"
+                        disabled={loading}
+                    >
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        {loading ? "Analisando..." : "IA Insights"}
+                    </Button>
+                    <Button variant="outline" onClick={handleExport} className="bg-white/50 border-white/60 hover:bg-white text-slate-700 rounded-xl">
+                        <Download className="mr-2 h-4 w-4" /> Exportar Dados
+                    </Button>
+                </div>
             </div>
 
             {/* KPI Cards */}
@@ -148,6 +222,44 @@ export default function MetricasPage() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+
+
+            {/* AI Insights Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="max-w-2xl bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-purple-700">
+                            <Sparkles className="h-5 w-5" /> Insights Estratégicos
+                        </DialogTitle>
+                        <DialogDescription>Baseado nos seus indicadores atuais.</DialogDescription>
+                    </DialogHeader>
+
+                    {aiInsights && (
+                        <div className="space-y-6 py-4">
+                            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-purple-800 text-sm font-medium">
+                                {aiInsights.analysis}
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                                    <Lightbulb className="h-4 w-4 text-yellow-500" />
+                                    Sugestões de Melhoria
+                                </h3>
+                                {aiInsights.suggestions.map((s: any, i: number) => (
+                                    <Card key={i} className="border-l-4 border-l-purple-500 shadow-sm">
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-base text-slate-800">{s.title}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm text-slate-600">{s.description}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+        </div >
     )
 }

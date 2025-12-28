@@ -69,3 +69,32 @@ export async function deleteAppointment(id: string) {
         return { success: false, error: "Failed to delete appointment" };
     }
 }
+
+export async function updateAppointment(id: string, data: {
+    date: Date;
+    time: string;
+    patientId: string;
+    type: string;
+    notes?: string;
+    status?: string;
+}) {
+    try {
+        await db.appointment.update({
+            where: { id },
+            data: {
+                date: data.date,
+                time: data.time,
+                patientId: data.patientId,
+                type: data.type,
+                notes: data.notes,
+                status: data.status
+            }
+        });
+        revalidatePath("/agenda");
+        revalidatePath("/dashboard");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating appointment:", error);
+        return { success: false, error: "Failed to update appointment" };
+    }
+}

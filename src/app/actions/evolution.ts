@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export async function saveEvolution(data: {
@@ -43,7 +43,7 @@ export async function saveEvolution(data: {
             select: { nextReevaluation: true }
         });
 
-        let redFlagWarning = null;
+        let redFlagWarning: string | null = null;
         if (patient?.nextReevaluation) {
             const today = new Date();
             // Reset time part for comparison

@@ -12,18 +12,31 @@ import {
     MoreHorizontal,
     User,
     FileCheck,
-    Link as LinkIcon
+    Link as LinkIcon,
+    AlertCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ReportDialog } from "./_components/report-dialog";
 import { getReports } from "@/app/actions/report";
 import { getPatients } from "@/app/actions/patient";
+import { useToast } from "@/hooks/use-toast";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function RelatoriosPage() {
+    const { toast } = useToast();
     const [reports, setReports] = useState<any[]>([]);
     const [patients, setPatients] = useState<any[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingReport, setEditingReport] = useState<any>(undefined);
+
+    // Filters State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
     async function loadData() {
         const [repResult, patResult] = await Promise.all([
@@ -42,6 +55,26 @@ export default function RelatoriosPage() {
     useEffect(() => {
         loadData();
     }, []);
+
+    // Filter Logic
+    const filteredReports = reports.filter(item => {
+        const matchesSearch = searchQuery === "" ||
+            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.patient?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesType = typeFilter === null || item.type === typeFilter;
+
+        return matchesSearch && matchesType;
+    });
+
+    const handleImportClick = () => {
+        // TODO: Implement Google Drive Import integration
+        toast({
+            title: "Configuração Necessária",
+            description: "Para importar arquivos, crie uma pasta no Google Drive e a integre nas Configurações.",
+            variant: "default", // or a specific variant for info
+        });
+    };
 
     // Glass Styles
     const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20";
@@ -83,7 +116,11 @@ export default function RelatoriosPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="bg-white/50 border-white/60 hover:bg-white text-slate-700 rounded-xl">
+                    <Button
+                        variant="outline"
+                        className="bg-white/50 border-white/60 hover:bg-white text-slate-700 rounded-xl"
+                        onClick={handleImportClick}
+                    >
                         <Upload className="mr-2 h-4 w-4" />
                         Importar
                     </Button>
@@ -106,13 +143,26 @@ export default function RelatoriosPage() {
                     <Input
                         placeholder="Buscar relatórios..."
                         className={`pl-10 h-11 rounded-xl ${glassInput}`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
-                    <Button variant="ghost" className="text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Tipos
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className={`text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl ${typeFilter ? 'bg-red-50 text-red-600' : ''}`}>
+                                <Filter className="mr-2 h-4 w-4" />
+                                {typeFilter || "Tipos"}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setTypeFilter(null)}>Todos</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTypeFilter("Avaliação")}>Avaliação</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTypeFilter("Evolução")}>Evolução</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTypeFilter("Alta")}>Alta</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setTypeFilter("Encaminhamento")}>Encaminhamento</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button variant="ghost" className="text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl">
                         Audiências
                     </Button>
@@ -131,7 +181,7 @@ export default function RelatoriosPage() {
                 </div>
 
                 <div className="divide-y divide-white/40">
-                    {reports.map((item) => (
+                    {filteredReports.map((item) => (
                         <div
                             key={item.id}
                             className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group cursor-pointer"
@@ -180,7 +230,7 @@ export default function RelatoriosPage() {
                             </div>
                         </div>
                     ))}
-                    {reports.length === 0 && (
+                    {filteredReports.length === 0 && (
                         <div className="p-8 text-center text-slate-500">
                             Nenhum relatório encontrado.
                         </div>

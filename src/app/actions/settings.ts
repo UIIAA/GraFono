@@ -111,3 +111,43 @@ export async function saveProfessionalProfile(userId: string, data: {
         return { success: false, error: "Failed to save profile" };
     }
 }
+
+export async function getDiagnoses() {
+    try {
+        const diagnoses = await db.diagnosis.findMany({
+            orderBy: { name: 'asc' }
+        });
+        return { success: true, data: diagnoses };
+    } catch (error) {
+        console.error("Error fetching diagnoses:", error);
+        return { success: false, error: "Failed to fetch diagnoses" };
+    }
+}
+
+export async function createDiagnosis(data: { name: string; description?: string; baseSeverity?: number }) {
+    try {
+        await db.diagnosis.create({
+            data
+        });
+        revalidatePath("/configuracoes");
+        revalidatePath("/calculadora");
+        return { success: true };
+    } catch (error) {
+        console.error("Error creating diagnosis:", error);
+        return { success: false, error: "Failed to create diagnosis" };
+    }
+}
+
+export async function deleteDiagnosis(id: string) {
+    try {
+        await db.diagnosis.delete({
+            where: { id }
+        });
+        revalidatePath("/configuracoes");
+        revalidatePath("/calculadora");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting diagnosis:", error);
+        return { success: false, error: "Failed to delete diagnosis" };
+    }
+}
