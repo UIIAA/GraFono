@@ -1,6 +1,8 @@
 import { PatientDashboardData } from "@/types/portal";
 import PortalDashboard from "./_components/portal-client";
 
+export const dynamic = "force-dynamic";
+
 // Mock Data Loader - In production this would come from the database based on the logged-in user
 async function getPortalData(): Promise<PatientDashboardData> {
     // Simulate delay
