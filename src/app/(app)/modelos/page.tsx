@@ -2,17 +2,29 @@ import { db } from "@/lib/db";
 import TemplatesClient from "./_components/templates-client";
 import { getTemplates } from "@/app/actions/template";
 import { getProfessionalProfile } from "@/app/actions/settings";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export default async function ModelosPage() {
-    // 1. Fetch First User (Single User Logic)
-    const user = await db.user.findFirst();
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.email) {
+        redirect("/login");
+    }
+
+    const user = await db.user.findUnique({
+        where: { email: session.user.email }
+    });
 
     if (!user) {
         return (
             <div className="flex h-[50vh] items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-xl font-bold">Nenhum usuário encontrado.</h1>
-                    <p className="text-slate-500">Por favor, crie um usuário no banco de dados.</p>
+                    <h1 className="text-xl font-bold">Usuário não encontrado.</h1>
+                    <p className="text-slate-500">Faça login novamente.</p>
                 </div>
             </div>
         );
