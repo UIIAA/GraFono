@@ -1,5 +1,5 @@
 import { Inter } from "next/font/google";
-import "../../globals.css"; // Go up two levels to reach app/globals.css
+import "../globals.css"; // Go up one level to reach app/globals.css
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
