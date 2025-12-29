@@ -1,0 +1,10 @@
+{
+    "functions": {
+        "src/app/api/**/*": {
+            "includeFiles": "content/**"
+        },
+        "src/app/**/*": {
+            "includeFiles": "content/**"
+        }
+    }
+}
