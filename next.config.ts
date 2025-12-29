@@ -6,14 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  webpack: (config, { dev }) => {
-    if (dev) {
-      config.watchOptions = {
-        ignored: ['**/*'],
-      };
-    }
-    return config;
-  },
+  turbopack: {},
 };
 
 export default nextConfig;
