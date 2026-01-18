@@ -584,21 +584,24 @@ function AgendaContent() {
                             {/* DB Events */}
                             {filteredAppointments.map(apt => {
                                 const { style, className } = getEventStyle(apt, displayedDays);
+                                // Safety check: if style prevents display, don't render content
+                                if (className?.includes('hidden') || style?.display === 'none') return null;
+
                                 return (
                                     <div
                                         key={apt.id}
                                         className={className}
-                                        style={style}
+                                        style={{ ...style, position: 'absolute' }} // Force absolute
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setEditingAppointment(apt);
                                             setIsDialogOpen(true);
                                         }}
                                     >
-                                        <div className="font-bold truncate">
+                                        <div className="font-bold truncate text-[11px] leading-tight">
                                             {apt.patient?.name || "Paciente"}
                                         </div>
-                                        <div className="font-normal opacity-75 text-[10px] truncate">
+                                        <div className="font-normal opacity-75 text-[9px] truncate leading-tight">
                                             {apt.type || "Consulta"}
                                         </div>
                                     </div>
