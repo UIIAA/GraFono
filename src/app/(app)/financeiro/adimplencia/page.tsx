@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getComplianceList } from "@/app/actions/finance";
+import { getComplianceList, getDelinquencyStats } from "@/app/actions/finance";
 import { ComplianceListClient } from "./_components/compliance-list-client";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,7 +19,13 @@ export default async function CompliancePage({
     const monthParam = searchParams.month ? parseInt(searchParams.month as string) : currentMonth;
     const yearParam = searchParams.year ? parseInt(searchParams.year as string) : currentYear;
 
-    const { success, data } = await getComplianceList(monthParam, yearParam);
+    const [complianceResult, delinquencyResult] = await Promise.all([
+        getComplianceList(monthParam, yearParam),
+        getDelinquencyStats()
+    ]);
+
+    const { success, data } = complianceResult;
+    const delinquencyStats = delinquencyResult.success ? delinquencyResult.data : null;
 
     const prevDate = new Date(yearParam, monthParam - 1);
     const nextDate = new Date(yearParam, monthParam + 1);
@@ -60,6 +66,7 @@ export default async function CompliancePage({
                     initialTransactions={success ? data : []}
                     month={monthParam}
                     year={yearParam}
+                    delinquencyStats={delinquencyStats}
                 />
             </Suspense>
         </div>

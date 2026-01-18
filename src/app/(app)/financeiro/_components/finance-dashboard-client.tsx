@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FinanceDialog } from "./finance-dialog";
+import { PaymentHistoryDialog } from "./payment-history-dialog";
 import { AvailabilityDialog } from "@/components/availability-dialog";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
-import { getFinancialMetrics, getTransactions } from "@/app/actions/finance";
+import { getFinancialMetrics, getTransactions, updateTransactionAmount } from "@/app/actions/finance";
 
 export default function FinanceDashboardClient({ initialMetrics, initialTransactions, patients }: any) {
     const { toast } = useToast();
@@ -114,6 +115,29 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
     const [searchTerm, setSearchTerm] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+
+    // Inline edit
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState("");
+
+    const handleEditAmount = (t: any) => {
+        setEditingId(t.id);
+        setEditValue(t.amount.toString());
+    };
+
+    const handleSaveAmount = async (id: string) => {
+        const newAmount = parseFloat(editValue.replace(",", "."));
+        if (isNaN(newAmount) || newAmount <= 0) {
+            toast({ title: "Erro", description: "Valor inválido", variant: "destructive" });
+            return;
+        }
+        const res = await updateTransactionAmount(id, newAmount);
+        if (res.success) {
+            setTransactions((prev: any[]) => prev.map((t: any) => t.id === id ? { ...t, amount: newAmount } : t));
+            toast({ title: "Atualizado", description: "Valor alterado com sucesso." });
+        }
+        setEditingId(null);
+    };
 
     // Re-filter when search or transactions change
     useEffect(() => {
@@ -374,10 +398,11 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                             <div key={t.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group">
                                 <div className="col-span-4">
                                     <div className="font-bold text-slate-800 text-sm mb-0.5">
-                                        {t.description || "Sem descrição"}
+                                        {t.patient?.name || "Geral"}
                                     </div>
                                     <div className="text-xs text-slate-500">
-                                        {t.patient?.name || "Geral"}
+                                        {t.description || "Sem descrição"}
+                                        {t.patient?.motherName && <span className="ml-1 text-slate-400">• {t.patient.motherName}</span>}
                                     </div>
                                 </div>
                                 <div className="col-span-2">
@@ -385,8 +410,28 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                                         {t.flow === 'INCOME' ? "Receita" : "Despesa"}
                                     </Badge>
                                 </div>
-                                <div className="col-span-2 font-bold text-slate-700">
-                                    R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                <div className="col-span-2">
+                                    {editingId === t.id ? (
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-slate-500">R$</span>
+                                            <Input
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onBlur={() => handleSaveAmount(t.id)}
+                                                onKeyDown={(e) => e.key === "Enter" && handleSaveAmount(t.id)}
+                                                className="h-8 w-24 text-sm font-bold"
+                                                autoFocus
+                                            />
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleEditAmount(t)}
+                                            className="font-bold text-slate-700 hover:text-blue-600 hover:underline cursor-pointer text-left"
+                                            title="Clique para editar"
+                                        >
+                                            R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="col-span-2 text-sm text-slate-500 font-medium">
                                     {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : "-"}
@@ -401,7 +446,11 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                                         {t.status}
                                     </span>
                                 </div>
-                                <div className="col-span-1 flex justify-end gap-2">
+                                <div className="col-span-1 flex justify-end gap-1">
+                                    <PaymentHistoryDialog
+                                        transactionId={t.id}
+                                        transactionDescription={t.description || "Transação"}
+                                    />
                                     {t.status?.toLowerCase() !== 'pago' && t.patient?.phone && (
                                         <Button
                                             variant="ghost"

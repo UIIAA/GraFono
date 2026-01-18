@@ -115,13 +115,13 @@ model Transaction {
   id          String   @id @default(cuid())
   description String
   amount      Float
-  type        String   // Old: avaliacao, tratamento. New: INCOME, EXPENSE? 
+  type        String   // Old: avaliacao, tratamento. New: INCOME, EXPENSE?
   // Let's keep 'type' for categorization like "Terapia", "Avaliação" for Incomes, or "Aluguel" for Expenses.
-  
+
   flow        String   @default("INCOME") // INCOME, EXPENSE
   category    String?  // FIXED (Fixa), VARIABLE (Variável) - mostly for Expenses
   source      String?  // PARTICULAR, CONVENIO - mostly for Income
-  
+
   status      String   // pago, pendente, atrasado, aguardando_repasse
   dueDate     DateTime
   paymentDate DateTime? // Used for "Single Click" settlement timestamp
@@ -134,8 +134,23 @@ model Transaction {
   patientId   String?
   patient     Patient? @relation(fields: [patientId], references: [id])
 
+  paymentHistory PaymentHistory[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model PaymentHistory {
+  id            String   @id @default(cuid())
+  action        String   // PAID, REVERTED
+  amount        Float
+  month         Int      // 1-12
+  year          Int      // e.g. 2025
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
 }
 
 model Appointment {

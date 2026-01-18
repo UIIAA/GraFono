@@ -242,7 +242,7 @@ function AgendaContent() {
         const aptDate = new Date(apt.date);
 
         const dayIndex = daysInView.findIndex(d => isSameDay(d.date, aptDate));
-        if (dayIndex === -1) return { display: 'none' };
+        if (dayIndex === -1) return { style: { display: 'none' }, className: 'hidden' };
 
         const hourStr = apt.time || "08:00";
         const hour = parseInt(hourStr.split(':')[0]);
@@ -595,11 +595,11 @@ function AgendaContent() {
                                             setIsDialogOpen(true);
                                         }}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <span>{apt.type || "Consulta"}</span>
-                                        </div>
-                                        <div className="font-normal opacity-90 truncate">
+                                        <div className="font-bold truncate">
                                             {apt.patient?.name || "Paciente"}
+                                        </div>
+                                        <div className="font-normal opacity-75 text-[10px] truncate">
+                                            {apt.type || "Consulta"}
                                         </div>
                                     </div>
                                 );

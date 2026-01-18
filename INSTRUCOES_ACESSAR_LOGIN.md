@@ -19,10 +19,7 @@ Como você já tem usuários criados, eles estão "sem senha" (`null`). Você pr
 3.  Rode este comando (substitua `seu@email.com` pelo seu e-mail real cadastrado):
 
 ```sql
--- Define a senha como "123456" para este usuário
 UPDATE "User"
-SET "password" = '$2a$12$W9E/fQx.t.P4b.a/I.f/..d.f/...' 
--- Ops, melhor usar um hash válido gerado. Abaixo está o hash para "123456":
 SET "password" = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
 WHERE "email" = 'seu@email.com';
 ```

@@ -4,9 +4,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getPatientHistory } from "./patient";
 import { db } from "@/lib/db";
 
-// Initialize Gemini
-// Ensure GEMINI_API_KEY is in your .env file
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "YOUR_API_KEY_HERE");
+// Initialize Gemini - Using gemini-2.0-flash-lite as primary model
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
+const AI_MODEL = "gemini-2.0-flash-lite"; // Options: gemini-2.0-flash-lite, gemini-2.0-flash, gemini-1.5-flash
 
 export async function generateTherapyPlan(patientId: string, clinicalParams: {
     complexity: number;
@@ -35,7 +35,7 @@ export async function generateTherapyPlan(patientId: string, clinicalParams: {
         }
 
         // 2. Construct Prompt
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
         const prompt = `
             Atue como um Especialista Fonoaudiólogo Sênior. Análise os dados do seguinte paciente e gere uma estimativa de tratamento.
@@ -88,7 +88,7 @@ export async function generateTherapyPlan(patientId: string, clinicalParams: {
 
 export async function generateMetricsInsights(metrics: any) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: AI_MODEL });
 
         const prompt = `
             Atue como um Consultor de Gestão de Clínicas de Fonoaudiologia. Analise os seguintes KPIs mensais e sugira melhorias.

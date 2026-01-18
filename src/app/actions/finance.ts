@@ -288,16 +288,28 @@ export async function saveTransaction(data: any) {
 
 export async function settleTransaction(id: string) {
     try {
+        const now = new Date();
         const tx = await db.transaction.update({
             where: { id },
             data: {
                 status: "PAID",
-                paymentDate: new Date()
+                paymentDate: now
+            }
+        });
+
+        // Create payment history record
+        await db.paymentHistory.create({
+            data: {
+                action: "PAID",
+                amount: tx.amount,
+                month: now.getMonth() + 1,
+                year: now.getFullYear(),
+                transactionId: id
             }
         });
 
         if (tx.patientId) {
-            await createGovBrReminder(tx.patientId, tx.amount, new Date());
+            await createGovBrReminder(tx.patientId, tx.amount, now);
         }
 
         revalidatePath("/financeiro/adimplencia");
@@ -311,13 +323,26 @@ export async function settleTransaction(id: string) {
 
 export async function undoSettlement(id: string) {
     try {
-        await db.transaction.update({
+        const now = new Date();
+        const tx = await db.transaction.update({
             where: { id },
             data: {
                 status: "PENDING",
                 paymentDate: null
             }
         });
+
+        // Create reverted history record
+        await db.paymentHistory.create({
+            data: {
+                action: "REVERTED",
+                amount: tx.amount,
+                month: now.getMonth() + 1,
+                year: now.getFullYear(),
+                transactionId: id
+            }
+        });
+
         revalidatePath("/financeiro/adimplencia");
         revalidatePath("/financeiro");
         return { success: true };
@@ -432,5 +457,72 @@ export async function generateMonthlyCharges(month: number, year: number) {
     } catch (error) {
         console.error("Error generating charges:", error);
         return { success: false, error: "Failed to generate charges" };
+    }
+}
+
+export async function getPaymentHistory(transactionId: string) {
+    try {
+        const history = await db.paymentHistory.findMany({
+            where: { transactionId },
+            orderBy: { createdAt: "desc" }
+        });
+        return { success: true, data: history };
+    } catch (error) {
+        console.error("Error fetching payment history:", error);
+        return { success: false, error: "Failed to fetch payment history" };
+    }
+}
+
+export async function updateTransactionAmount(id: string, amount: number) {
+    try {
+        await db.transaction.update({
+            where: { id },
+            data: { amount }
+        });
+        revalidatePath("/financeiro");
+        revalidatePath("/financeiro/adimplencia");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating transaction amount:", error);
+        return { success: false, error: "Failed to update amount" };
+    }
+}
+
+export async function getDelinquencyStats() {
+    try {
+        const today = new Date();
+        const overdueTransactions = await db.transaction.findMany({
+            where: {
+                flow: "INCOME",
+                OR: [
+                    { status: "atrasado" },
+                    { status: "OVERDUE" },
+                    { status: { in: ["pendente", "PENDING"] }, dueDate: { lt: today } }
+                ]
+            },
+            include: { patient: true }
+        });
+
+        const totalOverdue = overdueTransactions.reduce((acc, t) => acc + t.amount, 0);
+        const oldestDueDate = overdueTransactions.length > 0
+            ? overdueTransactions.reduce((oldest, t) =>
+                t.dueDate < oldest ? t.dueDate : oldest, overdueTransactions[0].dueDate)
+            : null;
+
+        const oldestDays = oldestDueDate
+            ? Math.floor((today.getTime() - oldestDueDate.getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        return {
+            success: true,
+            data: {
+                count: overdueTransactions.length,
+                totalAmount: totalOverdue,
+                oldestDays
+            }
+        };
+    } catch (error) {
+        console.error("Error fetching delinquency stats:", error);
+        return { success: false, error: "Failed to fetch delinquency stats" };
     }
 }

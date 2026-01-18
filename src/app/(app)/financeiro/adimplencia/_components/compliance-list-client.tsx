@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Clock, AlertCircle, RefreshCw, Filter } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, RefreshCw, Filter, AlertTriangle, DollarSign, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
@@ -19,14 +20,22 @@ import { settleTransaction, generateMonthlyCharges, undoSettlement } from "@/app
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
+interface DelinquencyStats {
+    count: number;
+    totalAmount: number;
+    oldestDays: number;
+}
+
 export function ComplianceListClient({
     initialTransactions,
     month,
-    year
+    year,
+    delinquencyStats
 }: {
     initialTransactions: any[],
     month: number,
-    year: number
+    year: number,
+    delinquencyStats: DelinquencyStats | null
 }) {
     const { toast } = useToast();
     const router = useRouter();
@@ -115,6 +124,47 @@ export function ComplianceListClient({
 
     return (
         <div className="space-y-6">
+            {/* Delinquency Summary Cards */}
+            {delinquencyStats && delinquencyStats.count > 0 && (
+                <div className="grid grid-cols-3 gap-4">
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="h-8 w-8 text-red-500" />
+                                <div>
+                                    <p className="text-sm text-red-600 font-medium">Inadimplentes</p>
+                                    <p className="text-2xl font-bold text-red-700">{delinquencyStats.count}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <DollarSign className="h-8 w-8 text-red-500" />
+                                <div>
+                                    <p className="text-sm text-red-600 font-medium">Total Atrasado</p>
+                                    <p className="text-2xl font-bold text-red-700">
+                                        R$ {delinquencyStats.totalAmount.toLocaleString('pt-BR')}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <Calendar className="h-8 w-8 text-red-500" />
+                                <div>
+                                    <p className="text-sm text-red-600 font-medium">Mais Antigo</p>
+                                    <p className="text-2xl font-bold text-red-700">{delinquencyStats.oldestDays} dias</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-slate-500" />
@@ -167,7 +217,8 @@ export function ComplianceListClient({
                                 key={t.id}
                                 className={cn(
                                     "grid grid-cols-12 gap-4 p-4 items-center transition-colors hover:bg-slate-50",
-                                    t.complianceStatus === "PAID" && "bg-green-50/30 hover:bg-green-50/50 grayscale opacity-80"
+                                    t.complianceStatus === "PAID" && "bg-green-50/30 hover:bg-green-50/50 grayscale opacity-80",
+                                    t.complianceStatus === "OVERDUE" && "bg-red-50 hover:bg-red-100 border-l-4 border-red-500"
                                 )}
                             >
                                 <div className="col-span-1">
