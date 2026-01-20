@@ -58,6 +58,8 @@ export function PatientDialog({
         insuranceNumber: patient?.insuranceNumber || "",
         authorizationStatus: patient?.authorizationStatus || "",
         imageUrl: patient?.imageUrl || "",
+        category: patient?.category || "FAMILY",
+        paymentMethod: patient?.paymentMethod || "PER_SESSION",
     });
 
     // Mock history state - in a real app this would come from the patient object or an API
@@ -87,6 +89,8 @@ export function PatientDialog({
                 insuranceNumber: patient?.insuranceNumber || "",
                 authorizationStatus: patient?.authorizationStatus || "",
                 imageUrl: patient?.imageUrl || "",
+                category: patient?.category || "FAMILY",
+                paymentMethod: patient?.paymentMethod || "PER_SESSION",
             });
             setHistory(patient?.history || [
                 { id: 1, date: "23/12/2024", type: "Contato", description: "Entrou em contato via WhatsApp interessado em terapia." },
@@ -231,6 +235,39 @@ export function PatientDialog({
                                         <SelectItem value="CONVENIO">Convênio</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2 group">
+                                    <Label className="group-hover:text-red-500 transition-colors">Categoria</Label>
+                                    <Select
+                                        value={formData.category}
+                                        onValueChange={(value) => setFormData({ ...formData, category: value })}
+                                    >
+                                        <SelectTrigger className="transition-all duration-300 hover:border-red-300 hover:bg-slate-50 focus:ring-red-200">
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white dark:bg-slate-950">
+                                            <SelectItem value="FAMILY">Família</SelectItem>
+                                            <SelectItem value="PARTNER">Parceiro/Clínica</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2 group">
+                                    <Label className="group-hover:text-red-500 transition-colors">Método de Cobrança</Label>
+                                    <Select
+                                        value={formData.paymentMethod}
+                                        onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+                                    >
+                                        <SelectTrigger className="transition-all duration-300 hover:border-red-300 hover:bg-slate-50 focus:ring-red-200">
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white dark:bg-slate-950">
+                                            <SelectItem value="PER_SESSION">Por Sessão</SelectItem>
+                                            <SelectItem value="MONTHLY">Mensalidade Fixa</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             {formData.financialSource === "CONVENIO" && (

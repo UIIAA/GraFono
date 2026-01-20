@@ -48,7 +48,7 @@ export async function savePatient(data: any) {
         // Map UI types to DB types if needed. 
         // Ensuring basic validation based on schema
         // Logic to calculate nextReevaluation
-        let nextReevaluation = null;
+        let nextReevaluation: Date | null = null;
         if (rest.reevaluationInterval && rest.reevaluationInterval !== "NONE") {
             const intervalMap: Record<string, number> = {
                 "3_MONTHS": 3,
@@ -95,6 +95,11 @@ export async function savePatient(data: any) {
             insuranceNumber: rest.insuranceNumber,
             authorizationStatus: rest.authorizationStatus,
             imageUrl: rest.imageUrl || null,
+
+            // Categorization
+            category: rest.category || "FAMILY",
+            paymentMethod: rest.paymentMethod || "PER_SESSION",
+
             // Note: lastReevaluation is typically updated by the Assessment module, not this form directly, 
             // but we can allow it if needed. For now, we only save what's common.
         };

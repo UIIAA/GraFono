@@ -73,6 +73,10 @@ model Patient {
   insuranceNumber   String?
   authorizationStatus String? // Guia Pendente, Guia Autorizada
   
+  // Categorization
+  category        String    @default("FAMILY") // FAMILY (Família), PARTNER (Parceiro/Clínica)
+  paymentMethod   String    @default("PER_SESSION") // PER_SESSION (Por Sessão), MONTHLY (Mensalidade)
+  
   // Reevaluation Cycle
   reevaluationInterval String?   // 3_MONTHS, 6_MONTHS, 1_YEAR, NONE
   lastReevaluation     DateTime?

@@ -65,8 +65,17 @@ export async function getFinancialMetrics(range?: { from: Date; to: Date }) {
 
         let receivablesAppointments = 0;
         futureAppointments.forEach(apt => {
-            const val = (apt.patient as any)?.negotiatedValue || 0; // Default to 0 to be conservative? Or 150?
-            receivablesAppointments += val;
+            const patient = apt.patient as any;
+            const isMonthly = patient?.paymentMethod === "MONTHLY" || patient?.category === "PARTNER"; // Fallback if paymentMethod not set yet
+
+            if (!isMonthly) {
+                // Only add daily value if NOT monthly payer
+                const val = patient?.negotiatedValue || 0;
+                receivablesAppointments += val;
+            }
+            // If Monthly, we assume the Transaction (generated via "Gerar Cobranças") handles it.
+            // TODO: In the future, we could "simulate" the monthly fee if it's not generated yet, 
+            // but for now preventing the multiplication is the critical fix.
         });
 
         const forecast = receivablesTransactions + receivablesAppointments;
