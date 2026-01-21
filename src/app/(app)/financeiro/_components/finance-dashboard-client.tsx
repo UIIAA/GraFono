@@ -229,7 +229,7 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
+                        <PopoverContent className="w-auto p-0 bg-white" align="end">
                             <CalendarComponent
                                 initialFocus
                                 mode="range"

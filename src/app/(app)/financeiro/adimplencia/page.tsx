@@ -34,6 +34,13 @@ export default async function CompliancePage({
         <div className="space-y-8 max-w-5xl mx-auto py-8">
             <div className="flex justify-between items-end border-b border-slate-100 pb-6">
                 <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Link href="/financeiro">
+                            <Button variant="ghost" size="sm" className="pl-0 hover:bg-transparent hover:text-red-500 text-slate-400">
+                                <ChevronLeft className="h-4 w-4 mr-1" /> Voltar para Financeiro
+                            </Button>
+                        </Link>
+                    </div>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
                         Lista de Adimplência
                     </h1>
