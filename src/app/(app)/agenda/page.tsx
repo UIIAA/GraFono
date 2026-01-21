@@ -11,6 +11,7 @@ import { getPatients } from "@/app/actions/patient";
 import { getAvailabilityConfig, AvailabilityData } from "@/app/actions/settings";
 import { NewAppointmentDialog } from "./_components/new-appointment-dialog";
 import { ConfirmationAssistant } from "./_components/confirmation-assistant";
+import { SessionDetailsDialog } from "./_components/session-details-dialog";
 import { AvailabilityDialog } from "@/components/availability-dialog";
 import { CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +57,11 @@ function AgendaContent() {
     const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | undefined>(undefined);
     const [editingAppointment, setEditingAppointment] = useState<any | undefined>(undefined);
+
+    // Session Dialog State
+    const [selectedSession, setSelectedSession] = useState<any | null>(null);
+    const [isSessionOpen, setIsSessionOpen] = useState(false);
+
     const [availability, setAvailability] = useState<AvailabilityData | null>(null);
 
     const [presetPatientId, setPresetPatientId] = useState<string | undefined>(undefined);
@@ -594,8 +600,9 @@ function AgendaContent() {
                                         style={{ ...style, position: 'absolute' }} // Force absolute
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setEditingAppointment(apt);
-                                            setIsDialogOpen(true);
+                                            // Handle Session Click: Open Session Details instead of Edit
+                                            setSelectedSession(apt);
+                                            setIsSessionOpen(true);
                                         }}
                                     >
                                         <div className="font-bold truncate text-[11px] leading-tight">
@@ -640,6 +647,14 @@ function AgendaContent() {
                     setIsAvailabilityOpen(open);
                     if (!open) loadData(); // Reload availability when closed
                 }}
+            />
+
+            {/* Session Details Dialog (Notes/Evolution) */}
+            <SessionDetailsDialog
+                open={isSessionOpen}
+                onOpenChange={setIsSessionOpen}
+                appointment={selectedSession}
+                onSave={loadData}
             />
         </div>
     );

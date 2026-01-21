@@ -10,11 +10,13 @@ export async function saveEvolution(data: {
     type: string; // PARTICULAR or CONVENIO
     date: Date;
     fileUrl?: string; // Optional attachment
+    appointmentId?: string; // Optional link to appointment
 }) {
     try {
-        const { patientId, content, emotionalStatus, type, date, fileUrl } = data;
+        const { patientId, content, emotionalStatus, type, date, fileUrl, appointmentId } = data;
 
         // 1. Save Evolution
+        // 1. Save Evolution (Always Create - Allow Multiple)
         await prisma.evolution.create({
             data: {
                 patientId,
@@ -22,7 +24,8 @@ export async function saveEvolution(data: {
                 emotionalStatus,
                 type,
                 date: date,
-                fileUrl
+                fileUrl,
+                appointmentId
             }
         });
 
@@ -66,14 +69,22 @@ export async function saveEvolution(data: {
     }
 }
 
-export async function getEvolutions(patientId: string) {
+export async function getEvolutions(patientId: string, page: number = 1) {
     try {
+        const pageSize = 10;
+        const skip = (page - 1) * pageSize;
+
         const evolutions = await prisma.evolution.findMany({
             where: { patientId },
             orderBy: { date: 'desc' },
-            take: 20 // Recent ones
+            take: pageSize,
+            skip: skip
         });
-        return { success: true, data: evolutions };
+
+        const total = await prisma.evolution.count({ where: { patientId } });
+        const hasMore = skip + evolutions.length < total;
+
+        return { success: true, data: evolutions, hasMore };
     } catch (error) {
         return { success: false, error: "Failed to fetch" };
     }

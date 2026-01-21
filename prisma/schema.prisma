@@ -169,6 +169,8 @@ model Appointment {
   patientId   String
   patient     Patient  @relation(fields: [patientId], references: [id])
   
+  evolutions  Evolution[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -202,6 +204,9 @@ model Evolution {
   patientId       String
   patient         Patient  @relation(fields: [patientId], references: [id])
   
+  appointmentId   String?
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
