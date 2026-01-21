@@ -68,7 +68,7 @@ export async function saveAssessment(data: any) {
         // Update Patient Reevaluation Dates
         const patient = await db.patient.findUnique({ where: { id: assessment.patientId } });
         if (patient) {
-            let nextReevaluation = null;
+            let nextReevaluation: Date | null = null;
             if (patient.reevaluationInterval && patient.reevaluationInterval !== "NONE") {
                 const intervalMap: Record<string, number> = {
                     "3_MONTHS": 3,

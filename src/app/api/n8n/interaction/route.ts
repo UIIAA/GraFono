@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
             data: {
                 patientId,
                 content,
-                type: type || "WHATSAPP_LOG",
                 date: new Date()
             }
         });

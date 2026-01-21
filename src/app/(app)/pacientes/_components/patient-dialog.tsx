@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Plus, User } from "lucide-react";
+import { Clock, Plus, User, Trash2 } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -22,6 +22,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deletePatient } from "@/app/actions/patient";
 
 export function PatientDialog({
     children,
@@ -68,6 +80,22 @@ export function PatientDialog({
         { id: 2, date: "20/12/2024", type: "Sistema", description: "Cadastro realizado no sistema." },
     ]);
     const [newNote, setNewNote] = useState("");
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!patient?.id) return;
+        setIsDeleting(true);
+        try {
+            await deletePatient(patient.id);
+            if (setOpen) setOpen(false);
+        } catch (error) {
+            console.error("Failed to delete", error);
+        } finally {
+            setIsDeleting(false);
+            setIsAlertOpen(false);
+        }
+    };
 
     // Sync state when patient changes or dialog opens
     useEffect(() => {
@@ -421,23 +449,57 @@ export function PatientDialog({
 
                 </div>
 
-                <div className="p-4 border-t bg-slate-50/50 flex justify-end gap-3">
-                    <Button
-                        variant="ghost"
-                        onClick={() => setOpen(false)}
-                        className="text-slate-500 hover:text-red-500 hover:bg-red-50 font-medium transition-all duration-200"
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        type="submit"
-                        onClick={handleSave}
-                        className="bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-200 hover:shadow-red-300 transition-all duration-200 hover:scale-[1.02]"
-                    >
-                        Salvar Alterações
-                    </Button>
+                <div className="p-4 border-t bg-slate-50/50 flex justify-between gap-3">
+                    {patient?.id && (
+                        <div className="flex-1">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsAlertOpen(true)}
+                                className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 px-2"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </Button>
+                        </div>
+                    )}
+                    <div className="flex gap-3">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setOpen?.(false)}
+                            className="text-slate-500 hover:text-red-500 hover:bg-red-50 font-medium transition-all duration-200"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            onClick={handleSave}
+                            className="bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-200 hover:shadow-red-300 transition-all duration-200 hover:scale-[1.02]"
+                        >
+                            Salvar Alterações
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
+
+            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                <AlertDialogContent className="bg-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o paciente <span className="font-bold text-red-600">{patient?.name}</span> e todos os dados associados (histórico, agendamentos, financeiro, etc).
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Mudei de ideia</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? "Excluindo..." : "Sim, excluir tudo"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     )
 }

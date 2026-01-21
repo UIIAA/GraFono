@@ -21,15 +21,17 @@ export async function POST(req: NextRequest) {
 
         const patient = await db.patient.create({
             data: {
-                name,
-                phone,
-                status: "Contato Inicial",
-                category: "FAMILY", // Default
-                paymentMethod: "PER_SESSION", // Default
-                observations: newExams,
-                // Add origin to history or generic field if available, 
-                // but schema doesn't have 'origin' field on Patient. 
-                // We'll log it in history right after creation if strictly needed, 
+                name: body.name,
+                phone: body.phone,
+                gender: body.gender || "Indefinido",
+                dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : new Date(),
+                status: body.status || "Novo Lead",
+
+
+                observations: body.observations || newExams, // Use newExams if body.observations is not provided
+                // Add origin to history or generic field if available,
+                // but schema doesn't have 'origin' field on Patient.
+                // We'll log it in history right after creation if strictly needed,
                 // but the prompt implies simple creation.
             }
         });
@@ -40,7 +42,6 @@ export async function POST(req: NextRequest) {
                 patientId: patient.id,
                 content: `Lead criado via WhatsApp/N8N. ${demand ? `Demanda: ${demand}` : ""}`,
                 date: new Date(),
-                type: "WHATSAPP_LOG" // or generic string if schema is strict
             }
         });
 

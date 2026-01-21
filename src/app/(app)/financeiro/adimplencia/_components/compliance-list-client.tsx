@@ -35,7 +35,7 @@ export function ComplianceListClient({
     initialTransactions: any[],
     month: number,
     year: number,
-    delinquencyStats: DelinquencyStats | null
+    delinquencyStats: DelinquencyStats | null | undefined
 }) {
     const { toast } = useToast();
     const router = useRouter();

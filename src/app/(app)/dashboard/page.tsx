@@ -1,33 +1,29 @@
 "use client";
 
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { MagicCard, MagicStatCard } from "@/components/ui/magic-card";
 import {
     Bell,
     Clock,
     Calendar as CalendarIcon,
     ArrowRight,
     User,
-    Activity,
     CheckCircle,
     XCircle,
     HeartPulse,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    TrendingUp,
+    Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { getActiveReminders } from "@/app/actions/reminders";
 import { ReminderList } from "@/components/reminder-list";
 import { getDashboardMetrics } from "@/app/actions/dashboard";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<any>(null);
@@ -58,7 +54,7 @@ export default function DashboardPage() {
                 setMetrics(metricsRes.data);
             }
             if (remindersRes.success) {
-                setReminders(remindersRes.data);
+                setReminders(remindersRes.data || []);
             }
             setLoading(false);
         }
@@ -73,234 +69,231 @@ export default function DashboardPage() {
             aptDate.getFullYear() === selectedDate.getFullYear();
     }) || [];
 
-    // Shared glass styles
-    const glassCard = "bg-white/60 backdrop-blur-md border border-red-100 shadow-lg shadow-red-100/20 rounded-3xl";
-    const glassPanel = "bg-white/50 backdrop-blur-sm border border-red-100 rounded-2xl";
-
     return (
-        <div
-            className="min-h-screen p-8 space-y-8 relative overflow-hidden font-sans"
-            style={{
-                background: "linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%)" // Rose to Orange Light Gradient
-            }}
-        >
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-red-400/10 to-orange-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-rose-400/10 to-red-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+        <div className="min-h-screen p-8 space-y-8 relative overflow-hidden font-sans">
+            {/* Premium Background */}
+            <div className="fixed inset-0 bg-slate-50 dark:bg-slate-950 pointer-events-none -z-20" />
+            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/40 via-slate-100/0 to-slate-100/0 dark:from-indigo-900/20 pointer-events-none -z-10" />
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none -z-10" />
 
-            <div className={`relative z-10 flex justify-between items-center bg-white/40 backdrop-blur-xl p-6 rounded-3xl border border-white/60 shadow-sm`}>
-                <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200">
-                        <User className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Painel Inicial</h2>
-                        <p className="text-slate-500 font-medium">Bem-vindo(a) de volta, Marcos.</p>
-                    </div>
+            {/* Header Section */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10"
+            >
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard Clínico</h2>
+                    <p className="text-slate-500 font-medium mt-1">Visão geral da sua performance hoje.</p>
                 </div>
                 <Link href="/pacientes?new=true">
-                    <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-xl shadow-lg shadow-red-200 border-0 h-11 px-6 font-semibold transition-all hover:scale-[1.02]">
+                    <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 border-0 font-semibold transition-all hover:scale-[1.02]">
                         + Novo Paciente
                     </Button>
                 </Link>
+            </motion.div>
+
+            {/* Metrics Row using MagicStatCard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <MagicStatCard
+                    icon={User}
+                    label="Pacientes Ativos"
+                    value={metrics?.totalPatients || 0}
+                    trend="+4%"
+                    trendUp={true}
+                    color="indigo"
+                    delay={0.1}
+                />
+                <MagicStatCard
+                    icon={CalendarIcon}
+                    label="Consultas Hoje"
+                    value={metrics?.todayAppointments || 0}
+                    color="orange"
+                    delay={0.2}
+                />
+                <MagicStatCard
+                    icon={Wallet}
+                    label="Resultado Caixa"
+                    value={`R$ ${metrics?.netBalance || '0,00'}`}
+                    trend="+12%"
+                    trendUp={true}
+                    color="emerald"
+                    delay={0.3}
+                />
+                <MagicStatCard
+                    icon={AlertCircle}
+                    label="Pendências"
+                    value={reminders.length || 0}
+                    trend={reminders.length > 0 ? "Ação Necessária" : "Em dia"}
+                    trendUp={reminders.length === 0}
+                    color="red"
+                    delay={0.4}
+                />
             </div>
 
             <div className="relative z-10 grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-                {/* Coluna Esquerda: Consultas por Data */}
-                <Card className={`lg:col-span-2 flex flex-col ${glassCard} border-0`}>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="flex items-center gap-2 text-xl text-slate-800">
-                                <Clock className="w-5 h-5 text-red-500" />
-                                Consultas de {selectedDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
-                            </CardTitle>
-                            {/* Removed redundant date badge since title now has date */}
-                        </div>
-                        <CardDescription className="text-slate-500">
-                            Você tem {filteredAppointments.length} consultas agendadas para esta data.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col flex-1 text-muted-foreground min-h-[400px]">
-                        {loading ? (
-                            <div className="flex flex-1 items-center justify-center">
-                                <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+                {/* Main Column: Calendar & Appointments */}
+                <div className="lg:col-span-2 space-y-6">
+                    <MagicCard className="min-h-[500px] flex flex-col" delay={0.5}>
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white/50 dark:bg-slate-900/50">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+                                    <Clock className="w-5 h-5 text-indigo-500" />
+                                    Agenda do Dia
+                                </h3>
+                                <p className="text-sm text-slate-500">
+                                    {selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', weekday: 'long' })}
+                                </p>
                             </div>
-                        ) : filteredAppointments.length > 0 ? (
-                            <div className="space-y-4 w-full">
-                                {filteredAppointments.map((apt: any) => (
-                                    <div key={apt.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 border border-red-100 hover:bg-white/80 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-red-100 h-10 w-10 rounded-xl flex items-center justify-center text-red-600 font-bold text-xs">
-                                                {apt.time}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-800">{apt.patient?.name}</p>
-                                                <p className="text-xs text-slate-500">{apt.type}</p>
-                                            </div>
-                                        </div>
-                                        <Link href="/agenda">
-                                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                Detalhes
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center flex-1">
-                                <div className="relative mb-6">
-                                    <div className="absolute inset-0 bg-red-400 blur-2xl opacity-20 rounded-full"></div>
-                                    <div className="bg-gradient-to-br from-white to-red-50 p-8 rounded-full border border-red-100 shadow-xl relative">
-                                        <CalendarIcon className="w-12 h-12 text-red-400" />
-                                    </div>
-                                </div>
-                                <p className="font-bold text-slate-800 text-lg">Dia livre!</p>
-                                <p className="text-slate-500 text-sm">Nenhuma consulta para este dia.</p>
-                                <Button variant="outline" className="mt-6 border-red-200 text-red-600 hover:bg-red-50 rounded-xl">
-                                    <Link href="/agenda">Ver Agenda Completa</Link>
-                                </Button>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
 
-                {/* Coluna Direita: Notificações, Agenda, Próximo */}
-                <div className="space-y-6 flex flex-col">
-
-                    {/* Active Reminders - New Section */}
-                    <ReminderList reminders={reminders} />
-
-                    {/* Notificações */}
-                    <Card className={`${glassCard} border-0`}>
-                        <CardHeader className="pb-3 border-b border-white/50">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Bell className="w-5 h-5 text-orange-500" />
-                                    <CardTitle className="text-base text-slate-800">Notificações</CardTitle>
-                                </div>
-                                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md shadow-red-200">4</span>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-3 pt-4">
-                            {[
-                                { title: "Pagamento Recebido", desc: "R$ 150,00 - Maria Silva", icon: CheckCircle, color: "text-green-500", bg: "bg-green-50", link: "/financeiro" },
-                                { title: "Sessão Confirmada", desc: "João Silva - 14:00", icon: CheckCircle, color: "text-blue-500", bg: "bg-blue-50", link: "/agenda" },
-                                { title: "Sessão Cancelada", desc: "Ana Oliveira - Amanhã", icon: XCircle, color: "text-red-500", bg: "bg-red-50", link: "/agenda" }
-                            ].map((item, i) => (
-                                <Link href={item.link} key={i}>
-                                    <div className={`${glassPanel} p-3 flex justify-between items-start hover:bg-white/50 transition-colors cursor-pointer group mb-2`}>
-                                        <div>
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${item.color}`}>
-                                                <item.icon className="w-3.5 h-3.5" /> {item.title}
-                                            </h4>
-                                            <p className="text-xs text-slate-600 mt-1 font-medium">{item.desc}</p>
-                                        </div>
-                                        <div className={`h-2 w-2 rounded-full ${item.color.replace('text', 'bg')} mt-1`} />
-                                    </div>
-                                </Link>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    {/* Alertas de Reavaliação (Critical) */}
-                    {metrics?.reevaluationAlerts?.length > 0 && (
-                        <Card className={`${glassCard} border-red-200 border-2 shadow-red-100`}>
-                            <CardHeader className="pb-3 border-b border-white/50 bg-red-50/50 rounded-t-3xl">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <AlertCircle className="w-5 h-5 text-red-600 animate-pulse" />
-                                        <CardTitle className="text-base text-red-700">Ciclo de Reavaliação</CardTitle>
-                                    </div>
-                                    <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{metrics.reevaluationAlerts.length}</span>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
-                                {metrics.reevaluationAlerts.map((patient: any, i: number) => {
-                                    const isLate = new Date(patient.nextReevaluation) < new Date();
-                                    const daysLeft = Math.ceil((new Date(patient.nextReevaluation).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-
-                                    return (
-                                        <div key={i} className={`p-3 rounded-xl border ${isLate ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-100'} flex justify-between items-center`}>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-slate-800">{patient.name}</h4>
-                                                <p className={`text-xs font-semibold ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
-                                                    {isLate ? `Atrasado ${Math.abs(daysLeft)} dias` : `Vence em ${daysLeft} dias`}
-                                                </p>
-                                            </div>
-                                            <Link href={`/agenda?new=true&patientId=${patient.id}&type=Sessão de Devolutiva`}>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs bg-white border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800">
-                                                    Agendar
-                                                </Button>
-                                            </Link>
-                                        </div>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Agenda da Semana (Interactive) */}
-                    <Card className={`${glassCard} border-0`}>
-                        <CardHeader className="pb-3 border-b border-white/50">
-                            <CardTitle className="text-base text-slate-800">Próximos Dias</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <div className="flex justify-between gap-1 overflow-x-auto">
+                            {/* Simple Date Selector */}
+                            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                                 {weekDays.map((day, i) => {
-                                    const isSelected = selectedDate.getDate() === day.getDate() && selectedDate.getMonth() === day.getMonth();
+                                    const isSelected = selectedDate.getDate() === day.getDate();
                                     return (
-                                        <div
+                                        <button
                                             key={i}
                                             onClick={() => setSelectedDate(day)}
                                             className={cn(
-                                                "flex flex-col items-center justify-center p-2 rounded-xl flex-1 transition-all cursor-pointer min-w-[36px]",
+                                                "w-8 h-8 rounded-md text-xs font-bold transition-all",
                                                 isSelected
-                                                    ? 'bg-red-500 text-white shadow-lg shadow-red-200 scale-105'
-                                                    : 'hover:bg-white/60 text-slate-500'
+                                                    ? "bg-white dark:bg-slate-700 text-indigo-600 shadow-sm"
+                                                    : "text-slate-400 hover:text-slate-600"
                                             )}
                                         >
-                                            <span className="text-[10px] font-bold uppercase mb-1 opacity-80">
-                                                {day.toLocaleDateString('pt-BR', { weekday: 'narrow' }).slice(0, 1)}
-                                            </span>
-                                            <span className="text-sm font-bold">{day.getDate()}</span>
-                                        </div>
+                                            {day.getDate()}
+                                        </button>
                                     )
                                 })}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
 
-                    {/* Próximo Paciente Highlight */}
+                        <div className="p-6 flex-1 bg-white/30 dark:bg-slate-900/30">
+                            {loading ? (
+                                <div className="flex flex-1 items-center justify-center h-full min-h-[300px]">
+                                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                                </div>
+                            ) : filteredAppointments.length > 0 ? (
+                                <div className="space-y-3">
+                                    {filteredAppointments.map((apt: any, i: number) => (
+                                        <motion.div
+                                            key={apt.id}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.1 * i }}
+                                            className="group flex items-center justify-between p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800 transition-all cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="bg-indigo-50 dark:bg-indigo-900/30 h-12 w-12 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                                                    {apt.time}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 dark:text-slate-200 text-lg tracking-tight">{apt.patient?.name}</p>
+                                                    <p className="text-sm text-slate-500 font-medium">{apt.type}</p>
+                                                </div>
+                                            </div>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Link href="/agenda">
+                                                    <Button size="sm" variant="ghost" className="text-indigo-600 hover:bg-indigo-50">
+                                                        Ver <ArrowRight className="w-3 h-3 ml-1" />
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
+                                    <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-full border border-indigo-100 shadow-lg mb-4">
+                                        <CalendarIcon className="w-10 h-10 text-indigo-400" />
+                                    </div>
+                                    <p className="font-bold text-slate-800 text-lg">Agenda Livre</p>
+                                    <p className="text-slate-500 text-sm">Nenhum atendimento para este dia.</p>
+                                </div>
+                            )}
+                        </div>
+                    </MagicCard>
+                </div>
+
+                {/* Right Column: Next Patient & Notifications */}
+                <div className="space-y-6 flex flex-col">
+
+                    {/* Next Appointment Highlight */}
                     {metrics?.nextAppointment ? (
-                        <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <HeartPulse className="w-24 h-24" />
-                            </div>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">
-                                {new Date(metrics.nextAppointment.date).toLocaleDateString('pt-BR', { weekday: 'long' })}, {metrics.nextAppointment.time}
-                            </p>
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-                                    <User className="text-white h-6 w-6" />
+                        <MagicCard className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white border-slate-700" delay={0.6}>
+                            <div className="p-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <HeartPulse className="w-32 h-32" />
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-bold">{metrics.nextAppointment.patient?.name}</h3>
-                                    <p className="text-slate-400 text-sm">{metrics.nextAppointment.type}</p>
+                                <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
+                                    Próximo Atendimento
+                                </p>
+                                <div className="flex items-start gap-4 mb-8 relative z-10">
+                                    <Avatar className="h-16 w-16 border-4 border-slate-700 shadow-xl">
+                                        <AvatarFallback className="bg-indigo-500 text-white text-xl">
+                                            {metrics.nextAppointment.patient?.name?.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h3 className="text-2xl font-bold tracking-tight leading-tight">{metrics.nextAppointment.patient?.name}</h3>
+                                        <div className="flex items-center gap-2 mt-1 text-slate-300 font-medium">
+                                            <Clock className="w-4 h-4" />
+                                            {metrics.nextAppointment.time} • {metrics.nextAppointment.type}
+                                        </div>
+                                    </div>
                                 </div>
+                                <Link href="/agenda">
+                                    <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold h-12">
+                                        Iniciar Sessão
+                                    </Button>
+                                </Link>
                             </div>
-                            <Link href="/agenda">
-                                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl font-bold">
-                                    Ver Detalhes
-                                </Button>
-                            </Link>
+                        </MagicCard>
+                    ) : null}
+
+                    {/* Notifications / Reminders */}
+                    <MagicCard delay={0.7} className="flex-1">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Bell className="w-5 h-5 text-indigo-500" />
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Atualizações</h3>
+                            </div>
+                            <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md shadow-rose-200">
+                                {metrics?.reevaluationAlerts?.length + reminders.length || 0}
+                            </span>
                         </div>
-                    ) : (
-                        <div className="rounded-3xl bg-slate-100 p-6 text-slate-500 shadow-inner flex flex-col items-center justify-center text-center">
-                            <p className="text-sm">Sem próximos atendimentos</p>
+                        <div className="p-4 space-y-3">
+                            {/* Reevaluation Alerts */}
+                            {metrics?.reevaluationAlerts?.map((patient: any, i: number) => (
+                                <div key={`alert-${i}`} className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 border border-orange-100">
+                                    <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-slate-800 truncate">{patient.name}</p>
+                                        <p className="text-xs text-orange-600 font-medium">Reavaliação pendente</p>
+                                    </div>
+                                    <Link href={`/agenda?new=true&patientId=${patient.id}&type=Sessão de Devolutiva`}>
+                                        <Button size="sm" variant="outline" className="h-7 text-xs bg-white border-orange-200 text-orange-700 hover:bg-orange-50">
+                                            Agendar
+                                        </Button>
+                                    </Link>
+                                </div>
+                            ))}
+
+                            {/* Use existing ReminderList but wrapped if possible, or mapping manual for style */}
+                            {reminders.slice(0, 3).map((reminder: any, i: number) => (
+                                <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 cursor-pointer">
+                                    <div className={cn("mt-1 h-2 w-2 rounded-full flex-shrink-0", reminder.type === 'PAYMENT' ? 'bg-emerald-500' : 'bg-indigo-500')} />
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-700 leading-tight">{reminder.title}</p>
+                                        <p className="text-xs text-slate-400 mt-1">{new Date(reminder.dueDate).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </MagicCard>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

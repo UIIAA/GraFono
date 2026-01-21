@@ -23,7 +23,8 @@ import {
     CheckCircle,
     Phone,
     PieChart,
-    Target
+    Target,
+    Clock
 } from "lucide-react";
 import {
     Card,
@@ -110,6 +111,7 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
     const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 }).format(val / 100);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState("");
@@ -245,7 +247,14 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                             <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" /> Adimplência
                         </Button>
                     </Link>
-                    <AvailabilityDialog />
+                    <Button
+                        variant="outline"
+                        className="bg-white/80 hover:bg-white text-slate-700 h-11 border-red-100 shadow-sm mr-2"
+                        onClick={() => setIsAvailabilityOpen(true)}
+                    >
+                        <Clock className="mr-2 h-4 w-4 text-slate-500" /> Disponibilidade
+                    </Button>
+                    <AvailabilityDialog open={isAvailabilityOpen} onOpenChange={setIsAvailabilityOpen} />
                     <Button onClick={() => setIsDialogOpen(true)} className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-11 px-6">
                         <DollarSign className="mr-2 h-4 w-4" /> Nova Transação
                     </Button>
@@ -385,9 +394,10 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
 
                 <div className="overflow-hidden rounded-xl border border-red-100">
                     <div className="grid grid-cols-12 gap-4 p-4 bg-red-50/50 border-b border-red-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <div className="col-span-4">Descrição / Paciente</div>
-                        <div className="col-span-2">Fluxo</div>
-                        <div className="col-span-2">Valor</div>
+                        <div className="col-span-3">Descrição / Paciente</div>
+                        <div className="col-span-1">Fluxo</div>
+                        <div className="col-span-2">Valor/Sessão</div>
+                        <div className="col-span-2">Valor Total</div>
                         <div className="col-span-2">Vencimento</div>
                         <div className="col-span-1">Status</div>
                         <div className="col-span-1 text-right">Ações</div>
@@ -396,67 +406,52 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                     <div className="divide-y divide-red-100 bg-white/50">
                         {filteredTransactions.map((t: any) => (
                             <div key={t.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/40 transition-colors group">
-                                <div className="col-span-4">
+                                <div className="col-span-3">
                                     <div className="font-bold text-slate-800 text-sm mb-0.5">
-                                        {t.patient?.name || "Geral"}
+                                        {t.patient?.name || t.description}
                                     </div>
-                                    <div className="text-xs text-slate-500">
-                                        {t.description || "Sem descrição"}
-                                        {t.patient?.motherName && <span className="ml-1 text-slate-400">• {t.patient.motherName}</span>}
+                                    <div className="text-slate-500 text-xs truncate">
+                                        {t.description}
                                     </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <Badge variant="outline" className={t.flow === 'INCOME' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}>
-                                        {t.flow === 'INCOME' ? "Receita" : "Despesa"}
+                                <div className="col-span-1">
+                                    <Badge variant="outline" className={cn("text-[10px] h-5 border-slate-200", t.flow === "INCOME" ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50")}>
+                                        {t.flow === "INCOME" ? "Receita" : "Despesa"}
                                     </Badge>
                                 </div>
                                 <div className="col-span-2">
-                                    {editingId === t.id ? (
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-slate-500">R$</span>
-                                            <Input
-                                                value={editValue}
-                                                onChange={(e) => setEditValue(e.target.value)}
-                                                onBlur={() => handleSaveAmount(t.id)}
-                                                onKeyDown={(e) => e.key === "Enter" && handleSaveAmount(t.id)}
-                                                className="h-8 w-24 text-sm font-bold"
-                                                autoFocus
-                                            />
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => handleEditAmount(t)}
-                                            className="font-bold text-slate-700 hover:text-blue-600 hover:underline cursor-pointer text-left"
-                                            title="Clique para editar"
-                                        >
-                                            R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </button>
-                                    )}
+                                    <div className="text-sm font-medium text-slate-600">
+                                        {formatCurrency(t.sessionValue || 0)}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">
+                                        {t.sessionCount ? `${t.sessionCount} sessões` : '-'}
+                                    </div>
                                 </div>
-                                <div className="col-span-2 text-sm text-slate-500 font-medium">
-                                    {t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : "-"}
+                                <div className="col-span-2 font-bold text-slate-700">
+                                    {formatCurrency(t.amount)}
+                                </div>
+                                <div className="col-span-2 text-sm text-slate-500">
+                                    {format(new Date(t.dueDate), "dd/MM/yyyy", { locale: ptBR })}
                                 </div>
                                 <div className="col-span-1">
-                                    <span className={`
-                                        inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide
-                                        ${t.status?.toLowerCase() === 'pago' ? 'bg-green-100 text-green-700' : ''}
-                                        ${t.status?.toLowerCase() === 'pendente' ? 'bg-orange-100 text-orange-700' : ''}
-                                        ${t.status?.toLowerCase() === 'atrasado' ? 'bg-red-100 text-red-700' : ''}
-                                    `}>
-                                        {t.status}
-                                    </span>
+                                    <Badge variant="secondary" className={cn("text-[10px] font-bold", t.status === "PAID" || t.status === "PAGO" || t.status === "pago" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" :
+                                        t.status === "PENDING" || t.status === "pendente" ? "bg-amber-100 text-amber-700 hover:bg-amber-200" :
+                                            "bg-rose-100 text-rose-700 hover:bg-rose-200")}>
+                                        {t.status === "PENDING" || t.status === "pendente" ? "PENDING" :
+                                            t.status === "PAID" || t.status === "PAGO" || t.status === "pago" ? "PAID" : "OVERDUE"}
+                                    </Badge>
                                 </div>
                                 <div className="col-span-1 flex justify-end gap-1">
                                     <PaymentHistoryDialog
                                         transactionId={t.id}
-                                        transactionDescription={t.description || "Transação"}
+                                        transactionDescription={t.description}
                                     />
-                                    {t.status?.toLowerCase() !== 'pago' && t.patient?.phone && (
+                                    {t.status !== "PAID" && t.status !== "PAGO" && t.status !== "pago" && t.patient?.phone && (
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-green-600 hover:bg-green-50"
-                                            title="Cobrar via WhatsApp"
+                                            className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
+                                            title="Cobrar"
                                             onClick={() => handleWhatsApp(t.patient.phone, t.patient.name)}
                                         >
                                             <Phone className="h-4 w-4" />
@@ -466,19 +461,19 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                             </div>
                         ))}
                     </div>
+
+                    <FinanceDialog
+                        open={isDialogOpen}
+                        onOpenChange={setIsDialogOpen}
+                        patients={patients}
+                        onSave={() => {
+                            router.refresh();
+                            toast({ title: "Sucesso", description: "Transação salva com sucesso." });
+                        }}
+                    />
+
                 </div>
             </div>
-
-            <FinanceDialog
-                open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                patients={patients}
-                onSave={() => {
-                    router.refresh();
-                    toast({ title: "Sucesso", description: "Transação salva com sucesso." });
-                }}
-            />
-
         </div>
     );
 }

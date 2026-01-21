@@ -57,7 +57,7 @@ export function PaymentHistoryDialog({
                     <History className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl shadow-2xl border-white/20">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <History className="h-5 w-5" />

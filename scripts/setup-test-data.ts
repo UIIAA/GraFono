@@ -8,7 +8,7 @@ async function main() {
 
     // Create "Ana Particular" (Verde, Reavaliação Vencida)
     const ana = await prisma.patient.upsert({
-        where: { id: 'ana-test' }, // using fixed ID for simplicity if supported by schema (cuid default, but upsert needs unique)
+
         // Actually patient id is cuid, name is not unique. I'll search by name? No upsert needs unique.
         // I'll creates new ones but first cleanup if possible or just create.
         // Since names are unique enough for testing:
@@ -27,7 +27,7 @@ async function main() {
             nextReevaluation: new Date(Date.now() - 86400000), // Yesterday
             phone: '5511999999999',
         },
-        where: { id: await findPatientIdByName('Ana Particular') || 'dummy-id' }
+        where: { id: (await findPatientIdByName('Ana Particular')) || 'dummy-id' }
     });
 
     // Create "Beto Convênio" (Azul)

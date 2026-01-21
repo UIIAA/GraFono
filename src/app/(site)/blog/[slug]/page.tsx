@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { BlogPost } from '@/lib/blog';
+import type { BlogPost } from '@/lib/blog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar, Clock, Tag } from 'lucide-react';
@@ -13,7 +13,7 @@ import ReactMarkdown from 'react-markdown';
 export default function BlogPost() {
   const params = useParams();
   const slug = params.slug as string;
-  
+
   const [post, setPost] = useState<BlogPost | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +133,7 @@ export default function BlogPost() {
                   }
                 }}
               />
-              
+
               {/* Overlay com informações */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
@@ -187,7 +187,7 @@ export default function BlogPost() {
               <CardContent className="p-8 text-center">
                 <h3 className="text-2xl font-bold mb-4">Gostou do conteúdo?</h3>
                 <p className="text-white/90 mb-6 max-w-2xl mx-auto">
-                  Se você tem dúvidas sobre o desenvolvimento da fala do seu filho ou precisa de orientação especializada, 
+                  Se você tem dúvidas sobre o desenvolvimento da fala do seu filho ou precisa de orientação especializada,
                   estou aqui para ajudar!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -196,7 +196,7 @@ export default function BlogPost() {
                       Agendar Avaliação
                     </Button>
                   </Link>
-                  <Button 
+                  <Button
                     variant="outline"
                     className="border-white text-white hover:bg-white/10"
                     onClick={() => window.open('https://wa.me/5511966287489', '_blank')}
@@ -212,43 +212,40 @@ export default function BlogPost() {
           <div className="mt-12">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Outros artigos</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {getAllPosts()
-                .filter(p => p.slug !== post.slug)
-                .slice(0, 2)
-                .map((relatedPost) => (
-                  <Link key={relatedPost.slug} href={`/blog/${relatedPost.slug}`}>
-                    <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-0 h-full group">
-                      <div className="relative h-32 overflow-hidden">
-                        <Image
-                          src={relatedPost.image}
-                          alt={relatedPost.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
+              {relatedPosts.map((relatedPost) => (
+                <Link key={relatedPost.slug} href={`/blog/${relatedPost.slug}`}>
+                  <Card className="bg-white shadow-lg hover:shadow-xl transition-all border-0 h-full group">
+                    <div className="relative h-32 overflow-hidden">
+                      <Image
+                        src={relatedPost.image}
+                        alt={relatedPost.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
                                 <div class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
                                   <div class="text-4xl">📝</div>
                                 </div>
                               `;
-                            }
-                          }}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-pink-600 transition-colors">
-                          {relatedPost.title}
-                        </h4>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {relatedPost.excerpt}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                          }
+                        }}
+                      />
+                    </div>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-pink-600 transition-colors">
+                        {relatedPost.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {relatedPost.excerpt}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
             </div>
           </div>
         </div>

@@ -9,11 +9,14 @@ export async function getPatients() {
         const patients = await db.patient.findMany({
             orderBy: { createdAt: "desc" },
             include: {
-                transactions: true,
+                // transactions: true, // REMOVED: Performance Killer (Deep QA)
                 appointments: {
                     select: {
                         date: true,
                         status: true
+                    },
+                    where: {
+                        status: "Realizado" // Optimization: Only fetch realizated for progress
                     }
                 }
             }
@@ -165,5 +168,46 @@ export async function addPatientHistory(patientId: string, content: string) {
     } catch (error) {
         console.error("Error adding patient history:", error);
         return { success: false, error: "Failed to add history" };
+    }
+}
+
+export async function deletePatient(patientId: string) {
+    try {
+        await db.$transaction(async (tx) => {
+            // Delete related records in order of dependency
+
+            // 1. Appointments
+            await tx.appointment.deleteMany({ where: { patientId } });
+
+            // 2. History & KnowledgeBase
+            await tx.patientHistory.deleteMany({ where: { patientId } });
+            await tx.patientKnowledgeBase.deleteMany({ where: { patientId } });
+
+            // 3. Clinical Documents
+            await tx.assessment.deleteMany({ where: { patientId } });
+            await tx.report.deleteMany({ where: { patientId } });
+            await tx.evolution.deleteMany({ where: { patientId } });
+            await tx.exam.deleteMany({ where: { patientId } });
+
+            // 4. Treatment Data
+            await tx.goal.deleteMany({ where: { patientId } });
+            await tx.exercise.deleteMany({ where: { patientId } });
+            await tx.treatmentProgress.deleteMany({ where: { patientId } });
+
+            // 5. Financials
+            await tx.transaction.deleteMany({ where: { patientId } });
+            await tx.reminder.deleteMany({ where: { patientId } });
+
+            // 6. Finally, the Patient
+            await tx.patient.delete({ where: { id: patientId } });
+        });
+
+        revalidatePath("/pacientes");
+        revalidatePath("/financeiro");
+        revalidatePath("/dashboard");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting patient:", error);
+        return { success: false, error: "Failed to delete patient" };
     }
 }

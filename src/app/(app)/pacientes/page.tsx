@@ -236,6 +236,7 @@ function PacientesContent() {
                         content: p.name,
                         patientId: p.id,
                         tags: [p.status],
+                        patient: p,
                     };
                 });
                 setTasks(dbTasks);

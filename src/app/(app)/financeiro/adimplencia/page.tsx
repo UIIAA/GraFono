@@ -63,10 +63,10 @@ export default async function CompliancePage({
 
             <Suspense fallback={<div className="text-center p-10">Carregando lista...</div>}>
                 <ComplianceListClient
-                    initialTransactions={success ? data : []}
-                    month={monthParam}
-                    year={yearParam}
-                    delinquencyStats={delinquencyStats}
+                    initialTransactions={success && data ? data : []}
+                    month={currentMonth}
+                    year={currentYear}
+                    delinquencyStats={delinquencyStats || null}
                 />
             </Suspense>
         </div>

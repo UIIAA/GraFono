@@ -49,34 +49,50 @@ export const authOptions: NextAuthOptions = {
     ],
     callbacks: {
         async session({ token, session }) {
-            if (token) {
+            if (token && session.user) {
                 session.user.id = token.id;
                 session.user.name = token.name;
                 session.user.email = token.email;
                 session.user.image = token.picture;
+                session.user.role = token.role;
             }
             return session;
         },
         async jwt({ token, user }) {
-            const dbUser = await db.user.findFirst({
-                where: {
-                    email: token.email,
-                },
-            });
-
-            if (!dbUser) {
-                if (user) {
-                    token.id = user.id;
-                }
+            // First login: user object is available
+            if (user) {
+                token.id = user.id;
+                token.role = user.role;
+                token.picture = user.image; // Mapping standard NextAuth image
                 return token;
             }
 
-            return {
-                id: dbUser.id,
-                name: dbUser.name,
-                email: dbUser.email,
-                picture: dbUser.digitalSignature, // Using signature as fake picture for now or null
-            };
+            // Subsequent requests: check DB to ensure data freshness (optional but recommended for roles)
+            if (token.email) {
+                const dbUser = await db.user.findUnique({
+                    where: {
+                        email: token.email,
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        digitalSignature: true
+                        // Note: We might want digitalSignature mapped to something else or just keep it unused for now if not needed in session
+                    }
+                });
+
+                if (dbUser) {
+                    token.id = dbUser.id;
+                    token.name = dbUser.name;
+                    token.email = dbUser.email;
+                    token.role = dbUser.role;
+                    // token.picture = dbUser.digitalSignature; // Only if you want signature as avatar
+                }
+            }
+
+            return token;
         },
     },
     secret: process.env.NEXTAUTH_SECRET,
