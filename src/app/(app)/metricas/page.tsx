@@ -12,30 +12,58 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added CardDescription
 import { useState } from "react";
-import { generateMetricsInsights } from "@/app/actions/ai";
+import { getKPIMetrics, getSessionsChartData, getDistributionData, KPIMetrics, MonthlyChartData, DistributionData } from "@/app/actions/metrics";
+import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Lightbulb } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MetricsRange } from "@/app/actions/metrics";
+import { AIAssistant } from "@/components/ai/ai-assistant";
 
 export default function MetricasPage() {
     const { toast } = useToast();
-    const [loading, setLoading] = useState(false);
-    const [aiInsights, setAiInsights] = useState<any>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
 
-    // Mock Data (Structured for Export/AI)
+    // Filter State
+    const [range, setRange] = useState<MetricsRange>('30d');
+
+    // Real Data State
+    const [kpis, setKpis] = useState<KPIMetrics | null>(null);
+    const [chartData, setChartData] = useState<MonthlyChartData[]>([]);
+    const [distribution, setDistribution] = useState<DistributionData[]>([]);
+
+    useEffect(() => {
+        async function loadMetrics() {
+            setPageLoading(true);
+            try {
+                const [kpiRes, chartRes, distRes] = await Promise.all([
+                    getKPIMetrics(range),
+                    getSessionsChartData(range),
+                    getDistributionData(range)
+                ]);
+
+                if (kpiRes.success && kpiRes.data) setKpis(kpiRes.data);
+                if (chartRes.success && chartRes.data) setChartData(chartRes.data);
+                if (distRes.success && distRes.data) setDistribution(distRes.data);
+
+            } catch (error) {
+                toast({ title: "Erro", description: "Falha ao carregar métricas.", variant: "destructive" });
+            } finally {
+                setPageLoading(false);
+            }
+        }
+        loadMetrics();
+    }, [range]);
+
+    // Helper for Export (Updated)
     const metricsData = {
-        activePatients: 124,
-        sessions: 543,
-        revenue: "R$ 42.5k",
-        attendanceRate: "94.2%",
-        pathologies: [
-            { label: "Atraso de Linguagem", val: 35 },
-            { label: "Trocas Fonológicas", val: 25 },
-            { label: "Motricidade Orofacial", val: 20 },
-            { label: "Voz / Disfonia", val: 15 },
-            { label: "Outros", val: 5 },
-        ]
+        activePatients: kpis?.activePatients || 0,
+        sessions: kpis?.sessionsThisMonth || 0,
+        revenue: kpis?.revenue ? `R$ ${kpis.revenue}` : "R$ 0",
+        attendanceRate: kpis?.attendanceRate ? `${kpis.attendanceRate}%` : "0%",
+        pathologies: distribution
     };
 
     const handleExport = () => {
@@ -57,24 +85,6 @@ export default function MetricasPage() {
         document.body.removeChild(link);
 
         toast({ title: "Exportado", description: "O arquivo CSV foi baixado." });
-    };
-
-    const handleAnalyze = async () => {
-        setLoading(true);
-        try {
-            const res = await generateMetricsInsights(metricsData);
-            if (res.success && res.data) {
-                setAiInsights(res.data);
-                setIsDialogOpen(true);
-            } else {
-                toast({ title: "Erro", description: "Não foi possível gerar insights.", variant: "destructive" });
-            }
-        } catch (error) {
-            console.error(error);
-            toast({ title: "Erro", description: "Falha na IA.", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
     };
 
     // Glass Styles
@@ -104,17 +114,32 @@ export default function MetricasPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button
-                        onClick={handleAnalyze}
-                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-200 transition-all hover:scale-105"
-                        disabled={loading}
-                    >
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        {loading ? "Analisando..." : "IA Insights"}
-                    </Button>
                     <Button variant="outline" onClick={handleExport} className="bg-white/50 border-white/60 hover:bg-white text-slate-700 rounded-xl">
                         <Download className="mr-2 h-4 w-4" /> Exportar Dados
                     </Button>
+                    <AIAssistant
+                        variant="feature"
+                        contextName="Métricas e KPIs"
+                        welcomeMessage="Analiso seus indicadores de desempenho para sugerir melhorias operacionais."
+                        data={{
+                            range: range,
+                            kpis: kpis,
+                            chartSummary: `Dados mostrados: ${chartData.length} pontos. Maior pico: ${chartData.length > 0 ? Math.max(...chartData.map(d => d.sessions)) : 0} sessões.`,
+                            distributionTop: distribution.slice(0, 3)
+                        }}
+                    />
+                    <Select value={range} onValueChange={(v) => setRange(v as MetricsRange)}>
+
+                        <SelectTrigger className="w-[180px] bg-white/50 border-white/60 rounded-xl">
+                            <SelectValue placeholder="Período" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="today">Hoje (Em Tempo Real)</SelectItem>
+                            <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                            <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                            <SelectItem value="6m">Últimos 6 meses</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
@@ -126,10 +151,15 @@ export default function MetricasPage() {
                         <Users className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">124</div>
-                        <p className="text-xs text-slate-500 font-medium text-green-600 flex items-center mt-1">
-                            <TrendingUp className="h-3 w-3 mr-1" /> +12% vs mês anterior
-                        </p>
+                        {pageLoading ? <Skeleton className="h-8 w-20" /> : (
+                            <>
+                                <div className="text-2xl font-bold text-slate-800">{kpis?.activePatients ?? 0}</div>
+                                <p className={cn("text-xs font-medium flex items-center mt-1", (kpis?.activePatientsGrowth || 0) >= 0 ? "text-green-600" : "text-red-500")}>
+                                    <TrendingUp className={cn("h-3 w-3 mr-1", (kpis?.activePatientsGrowth || 0) < 0 && "rotate-180")} />
+                                    {kpis?.activePatientsGrowth}% vs mês anterior
+                                </p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className={`${glassCard} border-0`}>
@@ -138,10 +168,15 @@ export default function MetricasPage() {
                         <Calendar className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">543</div>
-                        <p className="text-xs text-slate-500 font-medium text-green-600 flex items-center mt-1">
-                            <TrendingUp className="h-3 w-3 mr-1" /> +8% vs mês anterior
-                        </p>
+                        {pageLoading ? <Skeleton className="h-8 w-20" /> : (
+                            <>
+                                <div className="text-2xl font-bold text-slate-800">{kpis?.sessionsThisMonth ?? 0}</div>
+                                <p className={cn("text-xs font-medium flex items-center mt-1", (kpis?.sessionsGrowth || 0) >= 0 ? "text-green-600" : "text-red-500")}>
+                                    <TrendingUp className={cn("h-3 w-3 mr-1", (kpis?.sessionsGrowth || 0) < 0 && "rotate-180")} />
+                                    {kpis?.sessionsGrowth}% vs mês anterior
+                                </p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className={`${glassCard} border-0`}>
@@ -150,10 +185,17 @@ export default function MetricasPage() {
                         <DollarSign className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">R$ 42.5k</div>
-                        <p className="text-xs text-slate-500 font-medium text-green-600 flex items-center mt-1">
-                            <TrendingUp className="h-3 w-3 mr-1" /> +24% vs mês anterior
-                        </p>
+                        {pageLoading ? <Skeleton className="h-8 w-24" /> : (
+                            <>
+                                <div className="text-2xl font-bold text-slate-800">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis?.revenue ?? 0)}
+                                </div>
+                                <p className={cn("text-xs font-medium flex items-center mt-1", (kpis?.revenueGrowth || 0) >= 0 ? "text-green-600" : "text-red-500")}>
+                                    <TrendingUp className={cn("h-3 w-3 mr-1", (kpis?.revenueGrowth || 0) < 0 && "rotate-180")} />
+                                    {kpis?.revenueGrowth}% vs mês anterior
+                                </p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className={`${glassCard} border-0`}>
@@ -162,10 +204,15 @@ export default function MetricasPage() {
                         <Activity className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-800">94.2%</div>
-                        <p className="text-xs text-slate-500 font-medium text-red-500 flex items-center mt-1">
-                            -1.5% vs mês anterior
-                        </p>
+                        {pageLoading ? <Skeleton className="h-8 w-20" /> : (
+                            <>
+                                <div className="text-2xl font-bold text-slate-800">{kpis?.attendanceRate ?? 0}%</div>
+                                <p className={cn("text-xs font-medium flex items-center mt-1", (kpis?.attendanceGrowth || 0) >= 0 ? "text-green-600" : "text-red-500")}>
+                                    <TrendingUp className={cn("h-3 w-3 mr-1", (kpis?.attendanceGrowth || 0) < 0 && "rotate-180")} />
+                                    {kpis?.attendanceGrowth}% vs mês anterior
+                                </p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -175,91 +222,77 @@ export default function MetricasPage() {
                 {/* Main Graph */}
                 <Card className={`col-span-4 ${glassCard} border-0`}>
                     <CardHeader>
-                        <CardTitle className="text-slate-800">Sessões por Mês</CardTitle>
+                        <CardTitle className="text-slate-800">
+                            {range === 'today' ? 'Atendimentos por Hora' : (range === '6m' ? 'Sessões por Mês' : 'Sessões por Dia')}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[300px] w-full flex items-end justify-between p-4 gap-2">
-                            {[45, 66, 80, 70, 90, 100, 85, 95, 110, 105, 120, 115].map((val, i) => (
-                                <div key={i} className="flex flex-col items-center gap-2 flex-1 group cursor-pointer">
-                                    <div
-                                        className="w-full bg-slate-200 rounded-t-sm group-hover:bg-red-400 transition-all relative overflow-hidden"
-                                        style={{ height: `${val}%` }}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-t from-red-500 to-orange-400 opacity-80" />
-                                    </div>
-                                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-red-500 transition-colors">
-                                        {["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][i]}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
+                        {pageLoading ? <div className="h-[300px] w-full flex items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div> : (
+                            <div className="h-[300px] w-full flex items-end justify-between p-4 gap-2">
+                                {(() => {
+                                    const maxSessions = Math.max(...chartData.map(d => d.sessions), 1);
+                                    return chartData.map((item, i) => {
+                                        const heightPercentage = (item.sessions / maxSessions) * 100;
+                                        // Ensure even small values have at least a tiny visible bar (e.g. 5%) if they are non-zero.
+                                        // But if it is zero, keep it flat or minimal.
+                                        const visualHeight = item.sessions === 0 ? 0 : Math.max(heightPercentage, 5);
+
+                                        return (
+                                            <div key={i} className="flex flex-col items-center gap-2 flex-1 group cursor-pointer h-full justify-end">
+                                                <div className="relative w-full flex items-end h-[250px]">
+                                                    <div
+                                                        className="w-full bg-slate-200 rounded-t-sm group-hover:bg-red-400 transition-all relative overflow-hidden mx-auto"
+                                                        style={{ height: `${visualHeight}%`, width: '80%' }}
+                                                    >
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-red-500 to-orange-400 opacity-80" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-center h-[50px] justify-start content-start">
+                                                    <span className="text-[10px] font-medium text-slate-600 opacity-60 group-hover:opacity-100 mb-1">
+                                                        {item.sessions > 0 ? item.sessions : "-"}
+                                                    </span>
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-red-500 transition-colors">
+                                                        {item.month}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                                {chartData.length === 0 && <div className="text-slate-400">Sem dados históricos ainda.</div>}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
                 {/* Secondary Stats */}
                 <Card className={`col-span-3 ${glassCard} border-0`}>
                     <CardHeader>
-                        <CardTitle className="text-slate-800">Distribuição por Patologia</CardTitle>
+                        <CardTitle className="text-slate-800">Distribuição por Tipo</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {[
-                            { label: "Atraso de Linguagem", val: 35, color: "bg-red-500" },
-                            { label: "Trocas Fonológicas", val: 25, color: "bg-orange-500" },
-                            { label: "Motricidade Orofacial", val: 20, color: "bg-yellow-500" },
-                            { label: "Voz / Disfonia", val: 15, color: "bg-blue-500" },
-                            { label: "Outros", val: 5, color: "bg-slate-300" },
-                        ].map((item, i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="flex justify-between text-sm font-medium text-slate-700">
-                                    <span>{item.label}</span>
-                                    <span>{item.val}%</span>
+                        {pageLoading ? <div className="space-y-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-6 w-full" />)}</div> : (
+                            distribution.length > 0 ? distribution.map((item, i) => (
+                                <div key={i} className="space-y-2">
+                                    <div className="flex justify-between text-sm font-medium text-slate-700">
+                                        <span>{item.label}</span>
+                                        <span>{item.val}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div className={`h-full ${item.color || 'bg-slate-300'}`} style={{ width: `${item.val}%` }} />
+                                    </div>
                                 </div>
-                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div className={`h-full ${item.color}`} style={{ width: `${item.val}%` }} />
-                                </div>
-                            </div>
-                        ))}
+                            )) : <div className="text-slate-400 text-center py-10">Sem dados suficientes.</div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
-
-            {/* AI Insights Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl bg-white">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-purple-700">
-                            <Sparkles className="h-5 w-5" /> Insights Estratégicos
-                        </DialogTitle>
-                        <DialogDescription>Baseado nos seus indicadores atuais.</DialogDescription>
-                    </DialogHeader>
-
-                    {aiInsights && (
-                        <div className="space-y-6 py-4">
-                            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-purple-800 text-sm font-medium">
-                                {aiInsights.analysis}
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-slate-700 flex items-center gap-2">
-                                    <Lightbulb className="h-4 w-4 text-yellow-500" />
-                                    Sugestões de Melhoria
-                                </h3>
-                                {aiInsights.suggestions.map((s: any, i: number) => (
-                                    <Card key={i} className="border-l-4 border-l-purple-500 shadow-sm">
-                                        <CardHeader className="pb-2">
-                                            <CardTitle className="text-base text-slate-800">{s.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-sm text-slate-600">{s.description}</p>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <AIAssistant
+                variant="help"
+                contextName="Suporte Métricas"
+                welcomeMessage="Dúvidas sobre os gráficos? Posso explicar o cálculo de cada indicador."
+            />
         </div >
     )
 }

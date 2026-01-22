@@ -36,6 +36,7 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AgendaFilter, AgendaFilters } from "./_components/agenda-filter";
+import { AIAssistant } from "@/components/ai/ai-assistant";
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 to 19:00
 
@@ -455,6 +456,27 @@ function AgendaContent() {
                             )
                         })}
                     </div>
+                    <AIAssistant
+                        variant="feature"
+                        contextName="Agenda Clínica"
+                        welcomeMessage="Posso analisar sua agenda, identificar dias lotados ou sugerir otimizações de horário."
+                        data={{
+                            currentDate: currentDate,
+                            viewMode: view,
+                            appointmentsCount: filteredAppointments.length,
+                            appointments: filteredAppointments.map(a => ({
+                                date: a.date,
+                                status: a.status,
+                                type: a.type,
+                                patient: a.patient?.name
+                            })),
+                            availabilitySummary: availability ? {
+                                workingDays: availability.workingDays,
+                                start: availability.startHour,
+                                end: availability.endHour
+                            } : "Não configurada"
+                        }}
+                    />
                     <Button
                         onClick={() => {
                             setSelectedSlot(undefined);
@@ -655,6 +677,12 @@ function AgendaContent() {
                 onOpenChange={setIsSessionOpen}
                 appointment={selectedSession}
                 onSave={loadData}
+            />
+
+            <AIAssistant
+                variant="help"
+                contextName="Suporte Agenda"
+                welcomeMessage="Precisa de ajuda com o agendamento? Posso explicar como criar sessões ou configurar horários."
             />
         </div>
     );

@@ -52,6 +52,7 @@ import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { getFinancialMetrics, getTransactions, updateTransactionAmount } from "@/app/actions/finance";
+import { AIAssistant } from "@/components/ai/ai-assistant";
 
 export default function FinanceDashboardClient({ initialMetrics, initialTransactions, patients }: any) {
     const { toast } = useToast();
@@ -255,6 +256,23 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
                         <Clock className="mr-2 h-4 w-4 text-slate-500" /> Disponibilidade
                     </Button>
                     <AvailabilityDialog open={isAvailabilityOpen} onOpenChange={setIsAvailabilityOpen} />
+                    <AIAssistant
+                        variant="feature"
+                        contextName="Financeiro Estratégico"
+                        welcomeMessage="Analiso seu fluxo de caixa, lucro e despesas para sugerir melhorias financeiras."
+                        data={{
+                            period: date ? `${date.from?.toLocaleDateString()} - ${date.to?.toLocaleDateString()}` : "Periodo indefinido",
+                            metrics: metrics,
+                            recentTransactions: filteredTransactions.slice(0, 15).map((t: any) => ({
+                                description: t.description,
+                                amount: t.amount,
+                                type: t.flow,
+                                status: t.status,
+                                date: t.dueDate
+                            })),
+                            transactionsCount: filteredTransactions.length
+                        }}
+                    />
                     <Button onClick={() => setIsDialogOpen(true)} className="bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 h-11 px-6">
                         <DollarSign className="mr-2 h-4 w-4" /> Nova Transação
                     </Button>
@@ -474,6 +492,12 @@ export default function FinanceDashboardClient({ initialMetrics, initialTransact
 
                 </div>
             </div>
+
+            <AIAssistant
+                variant="help"
+                contextName="Suporte Financeiro"
+                welcomeMessage="Dúvidas sobre o financeiro? Posso explicar como lançar despesas ou ler o fluxo de caixa."
+            />
         </div>
     );
 }

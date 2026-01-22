@@ -57,6 +57,7 @@ import { PatientMobileCard } from "./_components/patient-mobile-card";
 import { PatientDialog } from "./_components/patient-dialog";
 import { HistoryDialog } from "./_components/history-dialog";
 import { Column, Task, Patient } from "./types";
+import { AIAssistant } from "@/components/ai/ai-assistant";
 
 const defaultCols: Column[] = [
     {
@@ -463,6 +464,23 @@ function PacientesContent() {
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <AIAssistant
+                                variant="feature"
+                                contextName="Gestão de Pacientes"
+                                welcomeMessage="Posso ajudar a identificar pacientes inativos, oportunidades de reativação ou perfis detalhados."
+                                data={{
+                                    totalPatients: patients.length,
+                                    activePatients: patients.filter(p => p.status === 'Em Tratamento' || p.status === 'Em avaliação').length,
+                                    waitingList: patients.filter(p => p.status === 'Aguardando').length,
+                                    discharged: patients.filter(p => p.status === 'Alta').length,
+                                    patientsSample: patients.slice(0, 10).map(p => ({
+                                        name: p.name,
+                                        status: p.status,
+                                        plan: p.financialSource
+                                    })),
+                                    viewMode: viewMode
+                                }}
+                            />
                             <Button
                                 onClick={handleNewPatient}
                                 className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
@@ -663,6 +681,12 @@ function PacientesContent() {
                     onOpenChange={setIsHistoryOpen}
                 />
             )}
+
+            <AIAssistant
+                variant="help"
+                contextName="Suporte Pacientes"
+                welcomeMessage="Precisa de ajuda com o cadastro? Posso explicar como registrar evoluções ou anexar arquivos."
+            />
         </div>
     );
 }

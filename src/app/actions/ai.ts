@@ -127,3 +127,55 @@ export async function generateMetricsInsights(metrics: any) {
         return { success: false, error: "Failed to generate insights." };
     }
 }
+
+export async function generateGenericInsight(contextName: string, contextData: any, userPrompt?: string) {
+    try {
+        const model = genAI.getGenerativeModel({ model: AI_MODEL });
+
+        const startPrompt = userPrompt
+            ? `O usuário fez uma pergunta específica sobre a tela/contexto "${contextName}": "${userPrompt}"`
+            : `Atue como um Especialista/Consultor analisando a tela/contexto "${contextName}".`;
+
+        const prompt = `
+            ${startPrompt}
+
+            DADOS DO CONTEXTO ATUAL (JSON):
+            ${JSON.stringify(contextData, null, 2)}
+
+            TAREFA:
+            1. Analise os dados fornecidos.
+            2. ${userPrompt ? 'Responda à pergunta do usuário usando os dados.' : 'Identifique insights, tendências, gargalos ou oportunidades.'}
+            3. Seja prático, direto e profissional.
+
+            RETORNE APENAS UM JSON VÁLIDO (sem markdown):
+            {
+                "title": "Título do Insight ou Resposta",
+                "analysis": "Análise/Resposta detalhada (pode usar markdown simples se necessário, mas evite blocos de código complexos)",
+                "suggestions": [
+                    {
+                        "title": "Ação Sugerida 1",
+                        "description": "Como implementar..."
+                    },
+                    {
+                        "title": "Ação Sugerida 2",
+                        "description": "..."
+                    }
+                ]
+            }
+        `;
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        // Clean markdown
+        const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const data = JSON.parse(jsonString);
+
+        return { success: true, data };
+
+    } catch (error) {
+        console.error("AI Generic Insight Error:", error);
+        return { success: false, error: "Falha ao gerar insights." };
+    }
+}
