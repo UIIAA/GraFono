@@ -120,53 +120,57 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
     }
 
     return (
-        <Card
+        <div
             ref={setNodeRef}
             style={style}
             {...attributes}
             {...listeners}
             className={cn(
-                "group relative overflow-hidden transition-all duration-200 hover:shadow-md border-primary/10",
-                "bg-white/80 backdrop-blur-sm", // Glass effect
-                isDragging && "ring-2 ring-primary rotate-2 shadow-xl opacity-90",
-                isReevaluationOverdue && "border-l-4 border-l-red-500" // Red Flag Border
+                "group relative overflow-hidden transition-all duration-300",
+                "bg-white/80 backdrop-blur-xl border border-white/60", // Glass base
+                "rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1", // Lift effect
+                isDragging && "ring-2 ring-indigo-500 rotate-2 shadow-2xl opacity-90 scale-105 z-50",
+                isReevaluationOverdue && "border-l-4 border-l-red-500" // Red Flag
             )}
         >
-            <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
+            {/* Hover Glow Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+            {/* Card Header */}
+            <div className="p-4 flex flex-row items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm group-hover:border-indigo-100 transition-all">
                             <AvatarImage src={patient.imageUrl || ""} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                            <AvatarFallback className="bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 font-bold text-xs">
                                 {initials}
                             </AvatarFallback>
                         </Avatar>
                         {isReevaluationOverdue && (
-                            <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse" title="Reavaliação Pendente" />
+                            <div className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-red-500 rounded-full border-2 border-white animate-pulse shadow-sm" title="Reavaliação Pendente" />
                         )}
                     </div>
-                    <div className="space-y-1">
-                        <h4 className="font-semibold text-sm line-clamp-1 text-gray-900 leading-none">
+                    <div className="space-y-0.5">
+                        <h4 className="font-bold text-sm text-slate-800 leading-tight group-hover:text-indigo-700 transition-colors">
                             {patient.name}
                         </h4>
-                        <div className="flex gap-1">
-                            <Badge variant="secondary" className="text-[10px] px-1.5 h-5 bg-primary/5 text-primary-dark border-primary/10">
+                        <div className="flex flex-wrap gap-1">
+                            <Badge variant="secondary" className={cn("text-[8px] px-1.5 h-4 border-transparent shadow-none", badgeStyle)}>
+                                {isParticular ? 'PART' : 'CONV'}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[8px] px-1.5 h-4 bg-slate-100 text-slate-500 border-transparent shadow-none">
                                 {patient.status}
                             </Badge>
-                            {patient.financialSource && (
-                                <Badge variant="outline" className={cn("text-[10px] px-1.5 h-5 border", badgeStyle)}>
-                                    {isParticular ? 'Particular' : 'Convênio'}
-                                </Badge>
-                            )}
                         </div>
                     </div>
                 </div>
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 -mr-2 text-gray-400 hover:text-primary hover:bg-primary/5"
+                            className="h-7 w-7 text-slate-400 hover:text-indigo-600 hover:bg-white/60 rounded-full"
                         >
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
@@ -179,7 +183,7 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
                         </DropdownMenuItem>
                         {patient.phone && (
                             <DropdownMenuItem onClick={handleWhatsApp}>
-                                <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+                                <MessageCircle className="mr-2 h-4 w-4 text-emerald-600" />
                                 WhatsApp
                             </DropdownMenuItem>
                         )}
@@ -189,30 +193,49 @@ export function PatientCard({ patient, onEdit, onHistory }: PatientCardProps) {
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-3">
-                {/* Treatment Progress */}
-                <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase font-medium tracking-wider">
-                        <span>Progresso do Tratamento</span>
-                        <span>{completed} / {targetSessions}</span>
-                    </div>
-                    <Progress value={progressPercent} className="h-1.5 bg-primary/10" indicatorClassName={cn(isReevaluationOverdue ? "bg-red-500" : "bg-primary")} />
+            </div>
+
+            {/* Card Content */}
+            <div className="px-4 pb-4 space-y-3 relative z-10">
+
+                {/* Clinical Tags (Mock) */}
+                <div className="flex gap-1 flex-wrap">
+                    {['Fono', 'Voz'].map(tag => (
+                        <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 uppercase tracking-wider">
+                            {tag}
+                        </span>
+                    ))}
                 </div>
 
                 {/* Next Appointment / Info */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-gray-50/50 p-2 rounded-lg border border-gray-100/50">
-                    <Calendar className="h-3.5 w-3.5 text-primary/70" />
-                    {nextAppointment ? (
-                        <span>
-                            {new Date(nextAppointment.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                        </span>
-                    ) : (
-                        <span>Sem agendamento</span>
-                    )}
+                <div className="flex justify-between items-center text-xs text-slate-500 bg-white/50 p-2 rounded-lg border border-white/60 shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-indigo-400" />
+                        {nextAppointment ? (
+                            <span className="font-medium text-slate-700">
+                                {new Date(nextAppointment.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                            </span>
+                        ) : (
+                            <span>Sem agendamento</span>
+                        )}
+                    </div>
                 </div>
-            </CardContent>
-        </Card>
+
+                {/* Micro-Progress Bar */}
+                <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-medium text-slate-400">
+                        <span>Evolução</span>
+                        <span>{Math.round(progressPercent)}%</span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                            className={cn("h-full transition-all duration-500 ease-out rounded-full", isReevaluationOverdue ? "bg-red-400" : "bg-gradient-to-r from-indigo-400 to-purple-400")}
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 

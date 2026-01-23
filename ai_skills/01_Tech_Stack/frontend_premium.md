@@ -13,6 +13,7 @@ Guidelines for creating High-End, Award-Winning UI/UX. Focus on "WOW" factors (a
 > * **Primary Style (Option 2):** **Aceternity / Magic UI**. Rich dark modes, subtle glowing borders, glassmorphism, fluid `framer-motion` layout transitions.
 > * **Structural Influence (Option 1):** **Linear-like density**. High information density without clutter. Use of popovers, command palettes (`cmdk`), and keyboard shortcuts.
 > * **Empathy Layer (Option 3):** **Healthcare Usability**. Accessible contrast ratios, calm color palettes for stress reduction, clear success states.
+> * **Architectural Foundation:** See `design_architecture.md`. Incorporate **Visual Kinematics** and **Scrollytelling** where appropriate without compromising clinical utility.
 
 ## Context & Rules
 *   **Project:** Grafono (Premium SaaS).
