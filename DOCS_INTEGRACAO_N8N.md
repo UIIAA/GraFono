@@ -73,6 +73,50 @@ Base URL: `https://[SEU-DOMINIO-VERCEL]/api/n8n`
     }
     ```
 
+#### 6. `PATCH /api/n8n/appointment/{id}`
+*   **Função:** Atualiza ou cancela uma consulta existente.
+*   **Input:**
+    ```json
+    {
+      "status": "Cancelado",
+      "date": "2024-02-16T15:00:00",
+      "time": "15:00",
+      "notes": "Reagendado a pedido do paciente"
+    }
+    ```
+*   **Ação:** Atualiza os campos fornecidos. Se `status === "Cancelado"`, registra em PatientHistory.
+
+#### 7. `GET /api/n8n/patient/{id}`
+*   **Função:** Retorna dados do paciente + próxima consulta agendada.
+*   **Output:**
+    ```json
+    {
+      "patient": {
+        "id": "uuid",
+        "name": "Maria Silva",
+        "phone": "5511999999999",
+        "status": "Em Terapia",
+        "nextAppointment": {
+          "id": "apt-uuid",
+          "date": "2024-02-20T14:00:00Z",
+          "type": "Terapia",
+          "status": "Agendado"
+        }
+      }
+    }
+    ```
+
+#### 8. `GET /api/n8n/patient/{id}/appointments`
+*   **Função:** Lista consultas de um paciente com filtros.
+*   **Query Params:** `?status=Agendado&limit=5`
+*   **Output:**
+    ```json
+    {
+      "appointments": [{ "id": "...", "date": "...", "status": "Agendado" }],
+      "total": 5
+    }
+    ```
+
 ---
 
 ## 3. Especificação Técnica (N8N - Agente)
@@ -87,6 +131,8 @@ O Agente AI no N8N deve ter acesso às seguintes ferramentas conectadas aos endp
 | `consultar_horarios` | "Use para ver horários livres em uma data." | `GET /calendar/slots` |
 | `agendar_avaliacao` | "Use quando o cliente confirmar o horário." | `POST /appointment` |
 | `registrar_conversa` | "Use ao fim do atendimento para salvar resumo." | `POST /interaction` |
+| `atualizar_agendamento` | "Use para remarcar ou cancelar uma consulta." | `PATCH /appointment/{id}` |
+| `consultar_paciente` | "Use para ver dados do paciente e próxima consulta." | `GET /patient/{id}` |
 
 ### B. System Prompt (Persona: Gabi)
 

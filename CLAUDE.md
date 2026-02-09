@@ -254,6 +254,47 @@ npx tsx scripts/seed-patients.ts
 }
 ```
 
+## AI Skills Infrastructure (Antigravity Kit 2.0)
+
+The `ai_skills/` directory provides structured context for AI agents working on this codebase.
+
+### Structure
+```
+ai_skills/
+├── 00_Meta/                         # Meta-skills (governance, standards)
+│   ├── 00_master_protocol.md        # PRIMARY directive - read this first
+│   ├── engineering_framework.md     # SDD Score, V-Model, planning
+│   ├── project_standards.md         # Naming, logging, conventions
+│   ├── skill_creator.md             # How to create new skills
+│   └── agent-creator/               # Agent creation skill
+├── 01_Tech_Stack/                   # Technical implementation skills
+│   ├── backend_deep.md              # Server Actions, Prisma patterns, security
+│   ├── db_prisma_guide.md           # Schema reference, 17 models, query patterns
+│   ├── frontend_guide.md            # Routes, components, state management
+│   ├── frontend_premium.md          # Aceternity UI, animations, premium styling
+│   ├── design_architecture.md       # Design philosophy, scrollytelling
+│   └── testing_deep.md              # Testing patterns, QA
+├── 02_Domain_Fono/                  # Domain-specific knowledge
+│   ├── regras_clinicas.md           # Patient lifecycle, clinical rules, enums
+│   ├── fluxos_n8n.md                # N8N integration, 8 endpoints, Gabi agent
+│   └── financial_logic.md           # KPIs, formulas, financial rules
+└── agents/                          # Specialized AI agents
+    ├── antigravity-designer/        # Premium UI/UX design agent
+    ├── engineering-lead/            # Code review & architecture agent
+    └── gabi-whatsapp/               # WhatsApp CRM agent (n8n)
+```
+
+### N8N API Integration
+8 endpoints at `/api/n8n/` secured with `x-api-key` header:
+- `POST /patient/check` - Verify patient by phone
+- `POST /patient/lead` - Create new lead
+- `GET /calendar/slots` - Available appointment slots
+- `POST /appointment` - Create appointment
+- `POST /interaction` - Log conversation
+- `PATCH /appointment/[id]` - Update/cancel appointment
+- `GET /patient/[id]` - Patient details + next appointment
+- `GET /patient/[id]/appointments` - List patient appointments
+
 ## File Locations Reference
 
 **Authentication**: `src/lib/auth.ts`, `src/middleware.ts`
@@ -261,5 +302,8 @@ npx tsx scripts/seed-patients.ts
 **Server actions**: `src/app/actions/*.ts`
 **UI components**: `src/components/ui/*.tsx`
 **Prisma schema**: `prisma/schema.prisma`
+**N8N API routes**: `src/app/api/n8n/*/route.ts`
+**N8N Auth**: `src/lib/n8n-auth.ts`
+**AI Skills**: `ai_skills/00_Meta/00_master_protocol.md` (start here)
 **Seed scripts**: `scripts/*.ts`
 **Environment variables**: `.env` (production DATABASE_URL), `.env.local` (pulled from Vercel)

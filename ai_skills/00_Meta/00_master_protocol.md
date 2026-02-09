@@ -16,9 +16,14 @@ Before writing a single line of code, you MUST scan the `ai_skills` directory an
 | :--- | :--- | :--- |
 | **Process / Governance** | **Engineering Framework** | `00_Meta/engineering_framework.md` |
 | **Backend Implementation** | **Backend Deep** | `01_Tech_Stack/backend_deep.md` |
-| **Frontend / UI / UX** | **Frontend Premium** | `01_Tech_Stack/frontend_premium.md` (Verify existence) |
-| **Testing / QA** | **Deep Testing** | `01_Tech_Stack/testing_deep.md` (Verify existence) |
+| **Database / Prisma** | **DB Prisma Guide** | `01_Tech_Stack/db_prisma_guide.md` |
+| **Frontend Structure** | **Frontend Guide** | `01_Tech_Stack/frontend_guide.md` |
+| **Frontend / UI / UX** | **Frontend Premium** | `01_Tech_Stack/frontend_premium.md` |
+| **Testing / QA** | **Deep Testing** | `01_Tech_Stack/testing_deep.md` |
 | **New Features** | **Project Standards** | `00_Meta/project_standards.md` |
+| **N8N / WhatsApp** | **Fluxos N8N** | `02_Domain_Fono/fluxos_n8n.md` |
+| **Clinical Rules** | **Regras Clínicas** | `02_Domain_Fono/regras_clinicas.md` |
+| **Financial Logic** | **Financial Logic** | `02_Domain_Fono/financial_logic.md` |
 | **Domain Logic** | **Fonoaudiologia** | `02_Domain_Fono/*` |
 
 ### ⚖️ Core Distinctions: Framework vs. Skill
@@ -46,6 +51,22 @@ You must adhere to the **V-Model** defined in the Engineering Framework:
 ## 4. 📝 Documentation
 *   Every major change must be reflected in `task.md` (Progress).
 *   Every completed feature must be documented in `walkthrough.md` (Evidence).
+
+## 5. 🤖 Agent Registry
+
+Specialized agents orchestrate multiple skills for complex workflows:
+
+| Agent | Use Case | Path |
+| :--- | :--- | :--- |
+| **antigravity-designer** | Premium UI/UX, Cinematic pages, Design systems | `agents/antigravity-designer/` |
+| **engineering-lead** | Code Review, SDD Governance, Architecture Planning | `agents/engineering-lead/` |
+| **gabi-whatsapp** | WhatsApp CRM, Lead Intake, Agendamento, Follow-up | `agents/gabi-whatsapp/` |
+
+### Agent Selection Rules
+- **UI/Design task?** → `antigravity-designer`
+- **Architecture/Code Review?** → `engineering-lead`
+- **WhatsApp/N8N/Patient Flow?** → `gabi-whatsapp`
+- **General Implementation?** → Use skills directly (no agent needed)
 
 ---
 *If you are unsure which skill applies, default to `engineering_framework.md` for safety and structure.*

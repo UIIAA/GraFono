@@ -1,0 +1,127 @@
+# Gabi WhatsApp Agent - Platform Configuration
+# Platform: n8n
+# Instance: code.escaladaonline.com.br
+
+platform: n8n
+instance: code.escaladaonline.com.br
+
+workflow:
+  id: Xo8zakpYB5BtqR69
+  name: "Agente WhatsApp V8 - Gabi"
+  version: 8
+
+# Base URL for Grafono API
+api:
+  base_url: "${GRAFONO_BASE_URL}/api/n8n"
+  auth:
+    type: header
+    key: x-api-key
+    value: "${N8N_API_KEY}"
+
+# WhatsApp Provider
+whatsapp:
+  provider: z-api
+  webhook_type: on-message-received
+  response_node: z-api-send
+
+# AI Agent Configuration
+agent:
+  model: claude-sonnet-4-5-20250929
+  temperature: 0.3
+  max_tokens: 1024
+  memory:
+    type: redis
+    window: 20  # messages per session
+
+# Tool Definitions (HTTP Request nodes connected to AI Agent)
+tools:
+  - name: verificar_paciente
+    description: "Use no início de toda conversa para buscar o paciente pelo número de telefone."
+    method: POST
+    path: /patient/check
+    body:
+      phone: "{{ $json.sender_phone }}"
+
+  - name: criar_lead
+    description: "Use para cadastrar um novo contato interessado que ainda não existe na base."
+    method: POST
+    path: /patient/lead
+    body:
+      name: "{{ $fromAI('name') }}"
+      phone: "{{ $json.sender_phone }}"
+      demand: "{{ $fromAI('demand') }}"
+      origin: "WHATSAPP"
+
+  - name: consultar_horarios
+    description: "Use para ver os horários livres em uma data específica. Formato: YYYY-MM-DD."
+    method: GET
+    path: "/calendar/slots?date={{ $fromAI('date') }}"
+
+  - name: agendar_avaliacao
+    description: "Use quando o cliente confirmar um horário para agendar a avaliação."
+    method: POST
+    path: /appointment
+    body:
+      patientId: "{{ $fromAI('patientId') }}"
+      date: "{{ $fromAI('datetime') }}"
+      type: "Avaliação Inicial"
+
+  - name: registrar_conversa
+    description: "Use ao fim de cada atendimento para salvar um resumo da conversa no histórico."
+    method: POST
+    path: /interaction
+    body:
+      patientId: "{{ $fromAI('patientId') }}"
+      content: "{{ $fromAI('summary') }}"
+      type: "WHATSAPP_LOG"
+
+  - name: atualizar_agendamento
+    description: "Use para remarcar ou cancelar uma consulta existente. Confirme com o paciente antes de cancelar."
+    method: PATCH
+    path: "/appointment/{{ $fromAI('appointmentId') }}"
+    body:
+      status: "{{ $fromAI('status') }}"
+      date: "{{ $fromAI('newDate') }}"
+      notes: "{{ $fromAI('notes') }}"
+
+  - name: consultar_paciente
+    description: "Use para ver os dados completos de um paciente e sua próxima consulta agendada."
+    method: GET
+    path: "/patient/{{ $fromAI('patientId') }}"
+
+# Pipeline Configuration (Pre-processing before AI Agent)
+pipeline:
+  steps:
+    - name: webhook-receive
+      type: z-api-webhook
+      description: "Recebe mensagem do WhatsApp"
+
+    - name: redis-context
+      type: redis-get
+      description: "Busca contexto da conversa (últimas 20 mensagens)"
+      key: "whatsapp:{{ $json.sender_phone }}"
+
+    - name: audio-check
+      type: if-condition
+      description: "Verifica se a mensagem é áudio"
+      condition: "$json.message_type === 'audio'"
+
+    - name: audio-transcribe
+      type: openai-whisper
+      description: "Transcreve áudio para texto (se aplicável)"
+
+    - name: context-inject
+      type: set-node
+      description: "Injeta contexto (histórico + dados do paciente) no prompt"
+
+    - name: ai-agent
+      type: ai-agent
+      description: "Agente Claude com 7 tools conectadas"
+
+    - name: redis-save
+      type: redis-set
+      description: "Salva resposta no contexto Redis"
+
+    - name: z-api-respond
+      type: http-request
+      description: "Envia resposta de volta pelo WhatsApp"
