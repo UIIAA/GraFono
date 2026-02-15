@@ -77,16 +77,12 @@ export function BioSection() {
 
                             {/* Main Image Container */}
                             <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden shadow-2xl shadow-rose-200/30 border-4 border-white">
-                                {/* Placeholder */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-rose-100 via-rose-50 to-stone-100 flex items-center justify-center">
-                                    <div className="text-center p-8">
-                                        <div className="w-24 h-24 rounded-full bg-rose-200/50 mx-auto mb-4 flex items-center justify-center">
-                                            <Heart className="w-12 h-12 text-rose-300" />
-                                        </div>
-                                        <p className="text-stone-400 font-medium">Dra. Graciele</p>
-                                        <p className="text-stone-300 text-sm mt-1">Foto profissional</p>
-                                    </div>
-                                </div>
+                                {/* Foto Graciele */}
+                                <img
+                                    src="/images/graciele-hero.jpg"
+                                    alt="Graciele Costa - Fonoaudióloga Infantil"
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                />
 
                                 {/* Hover Overlay */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
