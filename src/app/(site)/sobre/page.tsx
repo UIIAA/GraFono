@@ -122,7 +122,7 @@ export default function SobrePage() {
               <div className="absolute inset-0 bg-pink-200 rounded-full blur-3xl opacity-30"></div>
               <div className="relative bg-white rounded-2xl shadow-2xl p-8 w-full h-full flex items-center justify-center overflow-hidden">
                 <img 
-                  src="/images/professional-1.jpg" 
+                  src="/images/graciele-hero.jpg"
                   alt="Graciele Costa - Fonoaudióloga Infantil" 
                   className="w-full h-full object-cover"
                 />

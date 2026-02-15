@@ -203,7 +203,7 @@ export default function Home() {
               <div className="relative bg-white rounded-2xl shadow-2xl p-8">
                 <div className="w-full h-64 rounded-xl overflow-hidden">
                   <img 
-                    src="/images/professional-1.jpg" 
+                    src="/images/graciele-hero.jpg"
                     alt="Graciele Costa - Fonoaudióloga Infantil" 
                     className="w-full h-full object-cover"
                   />
