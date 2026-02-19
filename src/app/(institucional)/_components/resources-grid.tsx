@@ -11,6 +11,9 @@ const resources = [
         desc: "Aprenda a identificar quando procurar ajuda profissional.",
         icon: FileText,
         badge: "PDF Gratuito",
+        // Substituir pelo link do Google Drive quando o PDF estiver pronto
+        href: "#",
+        external: true,
     },
     {
         type: "Vídeo",
@@ -18,6 +21,9 @@ const resources = [
         desc: "5 atividades simples para fazer em casa com seu filho.",
         icon: Video,
         badge: "3 min",
+        // Substituir pelo link do post/reel no Instagram
+        href: "https://www.instagram.com/gracielefono",
+        external: true,
     },
     {
         type: "E-book",
@@ -25,6 +31,9 @@ const resources = [
         desc: "Um guia completo sobre o desenvolvimento da linguagem.",
         icon: Download,
         badge: "E-book",
+        // Substituir pelo link do Google Drive quando o e-book estiver pronto
+        href: "#",
+        external: true,
     },
 ];
 
@@ -88,42 +97,49 @@ export function ResourcesGrid() {
                                 ease: [0.25, 0.4, 0.25, 1],
                             }}
                         >
-                            <motion.div
-                                whileHover={{ y: -8 }}
-                                transition={{ duration: 0.3 }}
-                                className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-500 border border-stone-100 hover:border-rose-100 h-full cursor-pointer"
+                            <a
+                                href={resource.href}
+                                target={resource.external ? "_blank" : undefined}
+                                rel={resource.external ? "noopener noreferrer" : undefined}
+                                className="block h-full"
                             >
-                                {/* Badge */}
-                                <span className="absolute top-6 right-6 text-xs font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-500">
-                                    {resource.badge}
-                                </span>
+                                <motion.div
+                                    whileHover={{ y: -8 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-500 border border-stone-100 hover:border-rose-100 h-full cursor-pointer"
+                                >
+                                    {/* Badge */}
+                                    <span className="absolute top-6 right-6 text-xs font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-500">
+                                        {resource.badge}
+                                    </span>
 
-                                {/* Icon */}
-                                <div className="w-14 h-14 rounded-xl bg-stone-50 group-hover:bg-rose-50 flex items-center justify-center mb-6 transition-colors duration-300">
-                                    <resource.icon className="w-6 h-6 text-stone-400 group-hover:text-rose-500 transition-colors duration-300" />
-                                </div>
+                                    {/* Icon */}
+                                    <div className="w-14 h-14 rounded-xl bg-stone-50 group-hover:bg-rose-50 flex items-center justify-center mb-6 transition-colors duration-300">
+                                        <resource.icon className="w-6 h-6 text-stone-400 group-hover:text-rose-500 transition-colors duration-300" />
+                                    </div>
 
-                                {/* Type */}
-                                <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2 block">
-                                    {resource.type}
-                                </span>
+                                    {/* Type */}
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2 block">
+                                        {resource.type}
+                                    </span>
 
-                                {/* Title */}
-                                <h3 className="text-xl font-bold text-stone-900 mb-3 group-hover:text-stone-800 transition-colors">
-                                    {resource.title}
-                                </h3>
+                                    {/* Title */}
+                                    <h3 className="text-xl font-bold text-stone-900 mb-3 group-hover:text-stone-800 transition-colors">
+                                        {resource.title}
+                                    </h3>
 
-                                {/* Description */}
-                                <p className="text-stone-600 text-sm leading-relaxed mb-6">
-                                    {resource.desc}
-                                </p>
+                                    {/* Description */}
+                                    <p className="text-stone-600 text-sm leading-relaxed mb-6">
+                                        {resource.desc}
+                                    </p>
 
-                                {/* Link */}
-                                <div className="flex items-center gap-2 text-rose-500 font-medium text-sm group-hover:gap-3 transition-all">
-                                    <span>Acessar</span>
-                                    <ArrowUpRight className="w-4 h-4" />
-                                </div>
-                            </motion.div>
+                                    {/* Link */}
+                                    <div className="flex items-center gap-2 text-rose-500 font-medium text-sm group-hover:gap-3 transition-all">
+                                        <span>Acessar</span>
+                                        <ArrowUpRight className="w-4 h-4" />
+                                    </div>
+                                </motion.div>
+                            </a>
                         </motion.div>
                     ))}
                 </div>
