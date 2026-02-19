@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   turbopack: {},
+  async redirects() {
+    return [
+      {
+        source: "/landing",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/sobre",
+        destination: "/#sobre",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

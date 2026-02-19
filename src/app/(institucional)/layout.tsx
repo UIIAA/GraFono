@@ -12,7 +12,7 @@ export default function InstitutionalLayout({
             {/* Navigation */}
             <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/70 backdrop-blur-xl border-b border-rose-100/50 shadow-sm">
                 <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                    <Link href="/site" className="flex items-center gap-3 group">
+                    <Link href="/" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-rose-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-rose-200/50 group-hover:shadow-rose-300/60 transition-all duration-300 group-hover:scale-105">
                             G
                         </div>
@@ -37,13 +37,17 @@ export default function InstitutionalLayout({
                     </nav>
 
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="hidden sm:flex text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-                            <Instagram className="w-5 h-5" />
-                        </Button>
-                        <Button className="rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg shadow-stone-900/20 hover:shadow-stone-900/30 transition-all hover:scale-[1.02]">
-                            <Phone className="w-4 h-4 mr-2" />
-                            Agendar
-                        </Button>
+                        <a href="https://instagram.com/graciele_fonoaudiologa" target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" className="hidden sm:flex text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                                <Instagram className="w-5 h-5" />
+                            </Button>
+                        </a>
+                        <a href="https://wa.me/5511991556534" target="_blank" rel="noopener noreferrer">
+                            <Button className="rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg shadow-stone-900/20 hover:shadow-stone-900/30 transition-all hover:scale-[1.02]">
+                                <Phone className="w-4 h-4 mr-2" />
+                                Agendar
+                            </Button>
+                        </a>
                     </div>
                 </div>
             </header>
@@ -85,11 +89,11 @@ export default function InstitutionalLayout({
                         <ul className="space-y-3 text-sm">
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-4 h-4 text-rose-400 mt-1 shrink-0" />
-                                <span className="text-stone-400">Rua da Prata, 123 - Bethaville<br />Barueri - SP</span>
+                                <span className="text-stone-400">Av. Trindade, 254 - Sala 710, Bethaville I<br />Barueri - SP</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Phone className="w-4 h-4 text-rose-400 shrink-0" />
-                                <span className="text-stone-400">(11) 99999-9999</span>
+                                <a href="https://wa.me/5511991556534" className="text-stone-400 hover:text-rose-400 transition-colors">(11) 99155-6534</a>
                             </li>
                         </ul>
                     </div>
@@ -108,8 +112,12 @@ export default function InstitutionalLayout({
                         </ul>
                     </div>
                 </div>
-                <div className="container mx-auto px-6 mt-12 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
-                    © {new Date().getFullYear()} Graciele Fonoaudiologia. Todos os direitos reservados.
+                <div className="container mx-auto px-6 mt-12 pt-8 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+                    <span>© {new Date().getFullYear()} Graciele Fonoaudiologia. Todos os direitos reservados.</span>
+                    <div className="flex gap-6">
+                        <Link href="/politica-de-privacidade" className="hover:text-rose-400 transition-colors">Política de Privacidade</Link>
+                        <Link href="/termos-de-uso" className="hover:text-rose-400 transition-colors">Termos de Uso</Link>
+                    </div>
                 </div>
             </footer>
         </div>

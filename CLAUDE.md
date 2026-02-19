@@ -56,10 +56,12 @@ The app uses Next.js App Router with route groups:
   - `/configuracoes` - Professional settings
   - `/calculadora` - Clinical calculators
 
-- **`(site)/`** - Public-facing pages
-  - `/landing` - Landing page
-  - `/sobre` - About page
-  - `/blog` - Blog with MDX support
+- **`(institucional)/`** - Public-facing institutional site (gracielefono.com.br)
+  - `/` - Main landing page with Graciele's photo, specializations, testimonials
+  - `/blog/[slug]` - Blog posts (accessed via home carousel or direct link)
+
+- **`(site)/`** - SaaS product pages (Grafono branding)
+  - `/sistema` - System sales page for other professionals
 
 - **`/portal`** - Patient portal (separate auth context)
 - **`/login`** - Login page

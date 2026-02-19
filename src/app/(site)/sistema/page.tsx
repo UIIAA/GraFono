@@ -58,7 +58,7 @@ export default function SystemSalesPage() {
                                 Entrar
                             </Button>
                         </Link>
-                        <Link href="/register">
+                        <Link href="/login">
                             <Button className="bg-primary hover:bg-orange-600 text-white shadow-lg hover:shadow-primary/25 transition-all">
                                 Começar Grátis
                             </Button>
@@ -94,7 +94,7 @@ export default function SystemSalesPage() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link href="/register">
+                            <Link href="/login">
                                 <Button size="lg" className="h-14 px-8 text-lg bg-primary hover:bg-orange-600 text-white shadow-xl hover:shadow-primary/25 hover:-translate-y-1 transition-all rounded-full">
                                     Teste Gratuitamente
                                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -289,7 +289,7 @@ export default function SystemSalesPage() {
                                 </li>
                             </ul>
                             <div className="mt-8">
-                                <Link href="/register">
+                                <Link href="/login">
                                     <Button className="bg-white border border-gray-200 text-gray-900 hover:bg-gray-50">
                                         Saiba mais sobre o financeiro
                                     </Button>
@@ -350,7 +350,7 @@ export default function SystemSalesPage() {
                         Junte-se a centenas de profissionais que já modernizaram seus atendimentos com o Grafono.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Link href="/register">
+                        <Link href="/login">
                             <Button size="lg" className="h-16 px-10 text-xl bg-primary hover:bg-orange-600 text-white shadow-xl hover:shadow-primary/25 rounded-full transition-all">
                                 Criar Conta Gratuita
                             </Button>

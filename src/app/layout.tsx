@@ -14,20 +14,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Grafono - Fonoaudiologia Infantil | Graciele Costa",
+  title: "GracieleFono | Graciele Costa - Fonoaudiologia Infantil",
   description: "Transformando vidas através da comunicação. Atendimento especializado em fonoaudiologia infantil para desenvolvimento da fala, linguagem e expressão com confiança e alegria.",
-  keywords: ["fonoaudiologia infantil", "desenvolvimento da fala", "linguagem infantil", "Graciele Costa", "Grafono", "atraso na fala", "trocas de sons", "gagueira infantil"],
-  authors: [{ name: "Graciele Costa - Grafono" }],
+  keywords: ["fonoaudiologia infantil", "desenvolvimento da fala", "linguagem infantil", "Graciele Costa", "GracieleFono", "atraso na fala", "trocas de sons", "gagueira infantil", "Barueri", "Bethaville"],
+  authors: [{ name: "Graciele Costa - GracieleFono" }],
   openGraph: {
-    title: "Grafono - Fonoaudiologia Infantil | Graciele Costa",
+    title: "GracieleFono | Graciele Costa - Fonoaudiologia Infantil",
     description: "Transformando vidas através da comunicação. Atendimento especializado em fonoaudiologia infantil.",
-    url: "https://grafono.com.br",
-    siteName: "Grafono",
+    url: "https://gracielefono.com.br",
+    siteName: "GracieleFono",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Grafono - Fonoaudiologia Infantil | Graciele Costa",
+    title: "GracieleFono | Graciele Costa - Fonoaudiologia Infantil",
     description: "Transformando vidas através da comunicação. Atendimento especializado em fonoaudiologia infantil.",
   },
 };

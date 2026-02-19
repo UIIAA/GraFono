@@ -199,7 +199,7 @@ export default function BlogPost() {
                   <Button
                     variant="outline"
                     className="border-white text-white hover:bg-white/10"
-                    onClick={() => window.open('https://wa.me/5511966287489', '_blank')}
+                    onClick={() => window.open('https://wa.me/5511991556534', '_blank')}
                   >
                     WhatsApp
                   </Button>

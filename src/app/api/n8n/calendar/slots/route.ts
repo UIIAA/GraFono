@@ -2,7 +2,45 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAvailabilityConfig, AvailabilityData } from "@/app/actions/settings";
 import { getAppointments } from "@/app/actions/appointment";
 import { checkN8NAuth, unauthorizedResponse } from "@/lib/n8n-auth";
-import { format, getDay, parse, addMinutes, isBefore, isAfter, isEqual, startOfDay, endOfDay } from "date-fns";
+import { format, getDay, parse, addMinutes, isBefore, isAfter, isEqual, startOfDay, endOfDay, addDays } from "date-fns";
+
+// Map Portuguese day names to JS weekday numbers (0=Sun, 1=Mon, ..., 6=Sat)
+const DAY_NAME_MAP: Record<string, number> = {
+    "segunda": 1, "segunda-feira": 1, "seg": 1,
+    "terca": 2, "terça": 2, "terca-feira": 2, "terça-feira": 2, "ter": 2,
+    "quarta": 3, "quarta-feira": 3, "qua": 3,
+    "quinta": 4, "quinta-feira": 4, "qui": 4,
+    "sexta": 5, "sexta-feira": 5, "sex": 5,
+    "sabado": 6, "sábado": 6, "sab": 6,
+    "domingo": 0, "dom": 0,
+    "hoje": -1, "today": -1,
+    "amanha": -2, "amanhã": -2, "tomorrow": -2,
+};
+
+function resolveDateStr(input: string): Date | null {
+    const normalized = input.trim().toLowerCase();
+
+    // Check if it's a day name
+    const dayNum = DAY_NAME_MAP[normalized];
+    if (dayNum !== undefined) {
+        const today = new Date();
+        if (dayNum === -1) return today; // hoje
+        if (dayNum === -2) return addDays(today, 1); // amanha
+
+        // Find next occurrence of this weekday
+        const currentDay = today.getDay(); // 0=Sun
+        let daysAhead = dayNum - currentDay;
+        if (daysAhead <= 0) daysAhead += 7; // next week if today or past
+        return addDays(today, daysAhead);
+    }
+
+    // Try as YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+        return new Date(normalized + "T00:00:00");
+    }
+
+    return null;
+}
 
 export async function GET(req: NextRequest) {
     if (!checkN8NAuth(req)) {
@@ -14,10 +52,13 @@ export async function GET(req: NextRequest) {
         const dateStr = searchParams.get("date");
 
         if (!dateStr) {
-            return NextResponse.json({ error: "Date parameter required (YYYY-MM-DD)" }, { status: 400 });
+            return NextResponse.json({ error: "Date parameter required. Use YYYY-MM-DD or day name (segunda, terca, quarta, quinta, sexta, sabado)" }, { status: 400 });
         }
 
-        const date = new Date(dateStr + "T00:00:00"); // Force local/UTC consistency or handle timezone carefully
+        const date = resolveDateStr(dateStr);
+        if (!date || isNaN(date.getTime())) {
+            return NextResponse.json({ error: `Could not parse date: "${dateStr}". Use YYYY-MM-DD or day name (quarta, sexta, etc.)` }, { status: 400 });
+        }
         // Ideally we should use ISO strings with timezone, but simple YYYY-MM-DD is common for easy integrations.
         // Assuming server and clinic are in same timezone or handled via Date object.
 
@@ -61,7 +102,8 @@ export async function GET(req: NextRequest) {
         }
 
         if (validSlots.length === 0) {
-            return NextResponse.json({ date: dateStr, availableSlots: [] });
+            const resolvedDate = format(date, "yyyy-MM-dd");
+            return NextResponse.json({ date: resolvedDate, day: dayId, availableSlots: [], message: "Sem horarios disponiveis neste dia" });
         }
 
         // Generate discrete slots
@@ -116,8 +158,9 @@ export async function GET(req: NextRequest) {
             });
         });
 
+        const resolvedDate = format(date, "yyyy-MM-dd");
         return NextResponse.json({
-            date: dateStr,
+            date: resolvedDate,
             day: dayId,
             availableSlots
         });

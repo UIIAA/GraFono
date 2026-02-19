@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Heart, Star, Play } from "lucide-react";
 
@@ -223,20 +224,14 @@ export function HeroSectionPremium() {
 
                             {/* Image Container */}
                             <div className="relative w-full h-full rounded-[40px] overflow-hidden bg-gradient-to-br from-rose-100 to-stone-100 shadow-2xl shadow-rose-200/50 border-4 border-white">
-                                {/* Placeholder - Replace with actual image */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-rose-100 via-rose-50 to-stone-100 flex items-center justify-center">
-                                    <div className="text-center p-8">
-                                        <div className="w-32 h-32 rounded-full bg-rose-200/50 mx-auto mb-6 flex items-center justify-center">
-                                            <Heart className="w-16 h-16 text-rose-300" />
-                                        </div>
-                                        <p className="text-stone-400 font-medium">
-                                            Foto: Graciele com criança
-                                        </p>
-                                        <p className="text-stone-300 text-sm mt-2">
-                                            Momento de conexão e carinho
-                                        </p>
-                                    </div>
-                                </div>
+                                <Image
+                                    src="/images/hero-fono-crianca.png"
+                                    alt="Fonoaudióloga em sessão com criança - momento de conexão e aprendizado"
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                    sizes="(max-width: 768px) 100vw, 520px"
+                                />
                             </div>
 
                             {/* Floating Cards */}
