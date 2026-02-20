@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Phone, Instagram, MapPin } from "lucide-react";
+import { Phone, MapPin } from "lucide-react";
+import { Header } from "./_components/header";
 
 export default function InstitutionalLayout({
     children,
@@ -10,47 +10,7 @@ export default function InstitutionalLayout({
     return (
         <div className="min-h-screen bg-stone-50 font-sans selection:bg-rose-100 selection:text-rose-900">
             {/* Navigation */}
-            <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/70 backdrop-blur-xl border-b border-rose-100/50 shadow-sm">
-                <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-rose-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-rose-200/50 group-hover:shadow-rose-300/60 transition-all duration-300 group-hover:scale-105">
-                            G
-                        </div>
-                        <span className="font-semibold text-lg text-stone-800 tracking-tight">
-                            Graciele<span className="text-rose-500">Fono</span>
-                        </span>
-                    </Link>
-
-                    <nav className="hidden md:flex items-center gap-8">
-                        <Link href="#sobre" className="text-sm font-medium text-stone-500 hover:text-rose-500 transition-colors">
-                            Sobre
-                        </Link>
-                        <Link href="#especialidades" className="text-sm font-medium text-stone-500 hover:text-rose-500 transition-colors">
-                            Especialidades
-                        </Link>
-                        <Link href="#metodologia" className="text-sm font-medium text-stone-500 hover:text-rose-500 transition-colors">
-                            Metodologia
-                        </Link>
-                        <Link href="#materiais" className="text-sm font-medium text-stone-500 hover:text-rose-500 transition-colors">
-                            Materiais
-                        </Link>
-                    </nav>
-
-                    <div className="flex items-center gap-4">
-                        <a href="https://instagram.com/graciele_fonoaudiologa" target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="hidden sm:flex text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
-                                <Instagram className="w-5 h-5" />
-                            </Button>
-                        </a>
-                        <a href="https://wa.me/5511991556534" target="_blank" rel="noopener noreferrer">
-                            <Button className="rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg shadow-stone-900/20 hover:shadow-stone-900/30 transition-all hover:scale-[1.02]">
-                                <Phone className="w-4 h-4 mr-2" />
-                                Agendar
-                            </Button>
-                        </a>
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             {/* Main Content */}
             <main className="pt-20">

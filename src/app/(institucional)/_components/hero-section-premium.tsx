@@ -229,7 +229,7 @@ export function HeroSectionPremium() {
                             {/* Image Container */}
                             <div className="relative w-full h-full rounded-[40px] overflow-hidden bg-gradient-to-br from-rose-100 to-stone-100 shadow-2xl shadow-rose-200/50 border-4 border-white">
                                 <Image
-                                    src="/images/hero-fono-crianca.png"
+                                    src="/images/hero-fono-crianca.jpg"
                                     alt="Fonoaudióloga em sessão com criança - momento de conexão e aprendizado"
                                     fill
                                     className="object-cover"
