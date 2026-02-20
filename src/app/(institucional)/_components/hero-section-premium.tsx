@@ -156,21 +156,25 @@ export function HeroSectionPremium() {
                             custom={0.5}
                             className="flex flex-col sm:flex-row gap-4 pt-4"
                         >
-                            <Button
-                                size="lg"
-                                className="group h-14 px-8 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-lg shadow-xl shadow-stone-900/20 hover:shadow-stone-900/30 transition-all duration-300 hover:scale-[1.02]"
-                            >
-                                Agendar Avaliação
-                                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                            <Button
-                                size="lg"
-                                variant="ghost"
-                                className="group h-14 px-8 rounded-full border-2 border-stone-200 text-stone-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-lg transition-all duration-300"
-                            >
-                                <Play className="w-4 h-4 mr-2 fill-current" />
-                                Conhecer Método
-                            </Button>
+                            <a href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20uma%20avalia%C3%A7%C3%A3o" target="_blank" rel="noopener noreferrer">
+                                <Button
+                                    size="lg"
+                                    className="group h-14 px-8 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-lg shadow-xl shadow-stone-900/20 hover:shadow-stone-900/30 transition-all duration-300 hover:scale-[1.02]"
+                                >
+                                    Agendar Avaliação
+                                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                                </Button>
+                            </a>
+                            <a href="#metodologia">
+                                <Button
+                                    size="lg"
+                                    variant="ghost"
+                                    className="group h-14 px-8 rounded-full border-2 border-stone-200 text-stone-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-lg transition-all duration-300"
+                                >
+                                    <Play className="w-4 h-4 mr-2 fill-current" />
+                                    Conhecer Método
+                                </Button>
+                            </a>
                         </motion.div>
 
                         {/* Trust Indicators */}

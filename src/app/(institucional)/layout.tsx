@@ -80,7 +80,7 @@ export default function InstitutionalLayout({
                             <li><Link href="#sobre" className="text-stone-400 hover:text-rose-400 transition-colors">Sobre Mim</Link></li>
                             <li><Link href="#especialidades" className="text-stone-400 hover:text-rose-400 transition-colors">Especialidades</Link></li>
                             <li><Link href="#metodologia" className="text-stone-400 hover:text-rose-400 transition-colors">Método de Trabalho</Link></li>
-                            <li><Link href="#duvidas" className="text-stone-400 hover:text-rose-400 transition-colors">Dúvidas Frequentes</Link></li>
+                            <li><Link href="#materiais" className="text-stone-400 hover:text-rose-400 transition-colors">Materiais</Link></li>
                         </ul>
                     </div>
 

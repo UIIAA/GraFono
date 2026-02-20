@@ -76,24 +76,6 @@ export default function BlogPost() {
     );
   }
 
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="p-8 text-center">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Post não encontrado</h1>
-            <p className="text-gray-600 mb-6">O artigo que você está procurando não existe ou foi removido.</p>
-            <Link href="/">
-              <Button className="bg-pink-500 hover:bg-pink-600 text-white">
-                Voltar ao início
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 via-purple-50 to-blue-50">
       {/* Header */}
@@ -191,18 +173,19 @@ export default function BlogPost() {
                   estou aqui para ajudar!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/#contato">
+                  <a href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20uma%20avalia%C3%A7%C3%A3o" target="_blank" rel="noopener noreferrer">
                     <Button variant="secondary" className="bg-white text-pink-500 hover:bg-gray-100">
                       Agendar Avaliação
                     </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    className="border-white text-white hover:bg-white/10"
-                    onClick={() => window.open('https://wa.me/5511991556534', '_blank')}
-                  >
-                    WhatsApp
-                  </Button>
+                  </a>
+                  <a href="https://wa.me/5511991556534" target="_blank" rel="noopener noreferrer">
+                    <Button
+                      variant="outline"
+                      className="border-white text-white hover:bg-white/10"
+                    >
+                      WhatsApp
+                    </Button>
+                  </a>
                 </div>
               </CardContent>
             </Card>

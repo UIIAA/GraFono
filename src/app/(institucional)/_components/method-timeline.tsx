@@ -191,14 +191,17 @@ export function MethodTimeline() {
                         <p className="text-stone-500 mb-6">
                             Pronta para começar essa jornada?
                         </p>
-                        <motion.button
+                        <motion.a
+                            href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20uma%20avalia%C3%A7%C3%A3o"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className="group inline-flex items-center gap-2 px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium shadow-xl shadow-stone-900/20 transition-colors"
                         >
                             Agendar Avaliação
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </motion.button>
+                        </motion.a>
                     </motion.div>
                 </div>
             </div>

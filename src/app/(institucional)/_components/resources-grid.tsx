@@ -10,9 +10,9 @@ const resources = [
         title: "Sinais de Alerta na Fala",
         desc: "Aprenda a identificar quando procurar ajuda profissional.",
         icon: FileText,
-        badge: "PDF Gratuito",
+        badge: "Em breve",
         // Substituir pelo link do Google Drive quando o PDF estiver pronto
-        href: "#",
+        href: "",
         external: true,
     },
     {
@@ -21,7 +21,6 @@ const resources = [
         desc: "5 atividades simples para fazer em casa com seu filho.",
         icon: Video,
         badge: "3 min",
-        // Substituir pelo link do post/reel no Instagram
         href: "https://www.instagram.com/gracielefono",
         external: true,
     },
@@ -30,9 +29,9 @@ const resources = [
         title: "Primeiras Palavras",
         desc: "Um guia completo sobre o desenvolvimento da linguagem.",
         icon: Download,
-        badge: "E-book",
+        badge: "Em breve",
         // Substituir pelo link do Google Drive quando o e-book estiver pronto
-        href: "#",
+        href: "",
         external: true,
     },
 ];
@@ -85,63 +84,81 @@ export function ResourcesGrid() {
 
                 {/* Resources Grid */}
                 <div className="grid md:grid-cols-3 gap-8">
-                    {resources.map((resource, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={{
-                                duration: 0.6,
-                                delay: i * 0.15,
-                                ease: [0.25, 0.4, 0.25, 1],
-                            }}
-                        >
-                            <a
-                                href={resource.href}
-                                target={resource.external ? "_blank" : undefined}
-                                rel={resource.external ? "noopener noreferrer" : undefined}
-                                className="block h-full"
+                    {resources.map((resource, i) => {
+                        const isAvailable = !!resource.href;
+                        const Wrapper = isAvailable ? "a" : "div";
+                        const wrapperProps = isAvailable
+                            ? {
+                                  href: resource.href,
+                                  target: resource.external ? "_blank" : undefined,
+                                  rel: resource.external ? "noopener noreferrer" : undefined,
+                              }
+                            : {};
+
+                        return (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-50px" }}
+                                transition={{
+                                    duration: 0.6,
+                                    delay: i * 0.15,
+                                    ease: [0.25, 0.4, 0.25, 1],
+                                }}
                             >
-                                <motion.div
-                                    whileHover={{ y: -8 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="group relative bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-500 border border-stone-100 hover:border-rose-100 h-full cursor-pointer"
+                                <Wrapper
+                                    {...wrapperProps as any}
+                                    className="block h-full"
                                 >
-                                    {/* Badge */}
-                                    <span className="absolute top-6 right-6 text-xs font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-500">
-                                        {resource.badge}
-                                    </span>
+                                    <motion.div
+                                        whileHover={{ y: isAvailable ? -8 : 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className={`group relative bg-white rounded-2xl p-8 shadow-sm transition-all duration-500 border border-stone-100 h-full ${
+                                            isAvailable
+                                                ? "hover:shadow-xl hover:border-rose-100 cursor-pointer"
+                                                : "opacity-75"
+                                        }`}
+                                    >
+                                        {/* Badge */}
+                                        <span className={`absolute top-6 right-6 text-xs font-medium px-3 py-1 rounded-full ${
+                                            isAvailable ? "bg-rose-50 text-rose-500" : "bg-stone-100 text-stone-400"
+                                        }`}>
+                                            {resource.badge}
+                                        </span>
 
-                                    {/* Icon */}
-                                    <div className="w-14 h-14 rounded-xl bg-stone-50 group-hover:bg-rose-50 flex items-center justify-center mb-6 transition-colors duration-300">
-                                        <resource.icon className="w-6 h-6 text-stone-400 group-hover:text-rose-500 transition-colors duration-300" />
-                                    </div>
+                                        {/* Icon */}
+                                        <div className="w-14 h-14 rounded-xl bg-stone-50 group-hover:bg-rose-50 flex items-center justify-center mb-6 transition-colors duration-300">
+                                            <resource.icon className="w-6 h-6 text-stone-400 group-hover:text-rose-500 transition-colors duration-300" />
+                                        </div>
 
-                                    {/* Type */}
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2 block">
-                                        {resource.type}
-                                    </span>
+                                        {/* Type */}
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2 block">
+                                            {resource.type}
+                                        </span>
 
-                                    {/* Title */}
-                                    <h3 className="text-xl font-bold text-stone-900 mb-3 group-hover:text-stone-800 transition-colors">
-                                        {resource.title}
-                                    </h3>
+                                        {/* Title */}
+                                        <h3 className="text-xl font-bold text-stone-900 mb-3 group-hover:text-stone-800 transition-colors">
+                                            {resource.title}
+                                        </h3>
 
-                                    {/* Description */}
-                                    <p className="text-stone-600 text-sm leading-relaxed mb-6">
-                                        {resource.desc}
-                                    </p>
+                                        {/* Description */}
+                                        <p className="text-stone-600 text-sm leading-relaxed mb-6">
+                                            {resource.desc}
+                                        </p>
 
-                                    {/* Link */}
-                                    <div className="flex items-center gap-2 text-rose-500 font-medium text-sm group-hover:gap-3 transition-all">
-                                        <span>Acessar</span>
-                                        <ArrowUpRight className="w-4 h-4" />
-                                    </div>
-                                </motion.div>
-                            </a>
-                        </motion.div>
-                    ))}
+                                        {/* Link */}
+                                        <div className={`flex items-center gap-2 font-medium text-sm ${
+                                            isAvailable ? "text-rose-500 group-hover:gap-3" : "text-stone-400"
+                                        } transition-all`}>
+                                            <span>{isAvailable ? "Acessar" : "Em breve"}</span>
+                                            {isAvailable && <ArrowUpRight className="w-4 h-4" />}
+                                        </div>
+                                    </motion.div>
+                                </Wrapper>
+                            </motion.div>
+                        );
+                    })}
                 </div>
 
                 {/* Newsletter CTA */}
@@ -159,20 +176,16 @@ export function ResourcesGrid() {
                         <p className="text-stone-500 text-sm mb-6">
                             Dicas semanais para estimular a comunicação do seu filho.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <input
-                                type="email"
-                                placeholder="Seu melhor e-mail"
-                                className="flex-1 px-5 py-3 rounded-full border border-stone-200 focus:border-rose-300 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-stone-700 placeholder:text-stone-400"
-                            />
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium transition-colors"
-                            >
-                                Quero Receber
-                            </motion.button>
-                        </div>
+                        <motion.a
+                            href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20receber%20dicas%20sobre%20desenvolvimento%20da%20fala"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="inline-flex items-center justify-center px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-medium transition-colors"
+                        >
+                            Receber pelo WhatsApp
+                        </motion.a>
                     </div>
                 </motion.div>
             </div>
