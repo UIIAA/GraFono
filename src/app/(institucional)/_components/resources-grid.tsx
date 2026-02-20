@@ -21,7 +21,7 @@ const resources = [
         desc: "5 atividades simples para fazer em casa com seu filho.",
         icon: Video,
         badge: "3 min",
-        href: "https://www.instagram.com/gracielefono",
+        href: "https://www.instagram.com/p/DSTGVtLEWP0/",
         external: true,
     },
     {
