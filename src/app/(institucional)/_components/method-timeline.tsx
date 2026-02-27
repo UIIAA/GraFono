@@ -116,7 +116,7 @@ export function MethodTimeline() {
         <section
             ref={containerRef}
             id="metodologia"
-            className="py-32 bg-white relative overflow-hidden z-20 rounded-t-[32px] shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.08)] -mt-[100vh]"
+            className="py-20 md:py-32 bg-white relative overflow-hidden md:z-20 md:rounded-t-[32px] md:shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.08)] md:-mt-[100vh]"
         >
             {/* Background Elements */}
             <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-rose-50/30 rounded-full blur-[120px]" />

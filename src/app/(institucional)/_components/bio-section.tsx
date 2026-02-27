@@ -79,7 +79,7 @@ export function BioSection() {
                     {/* Image Column */}
                     <motion.div
                         style={{ y: imageY }}
-                        className="lg:col-span-5 relative"
+                        className="lg:col-span-5 relative overflow-hidden"
                     >
                         <motion.div
                             variants={fadeInUp}
@@ -117,7 +117,7 @@ export function BioSection() {
                                 whileInView={{ opacity: 1, scale: 1, x: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: 0.4, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-                                className="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl border border-rose-100"
+                                className="absolute -bottom-4 -right-2 sm:-bottom-6 sm:-right-6 bg-white p-4 sm:p-6 rounded-2xl shadow-xl border border-rose-100"
                             >
                                 <p className="text-4xl font-bold text-rose-500">7+</p>
                                 <p className="text-sm font-medium text-stone-600 mt-1">

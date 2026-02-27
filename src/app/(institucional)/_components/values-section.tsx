@@ -50,7 +50,7 @@ const CARD_COUNT = values.length;
 const CARD_WIDTH = 220;
 const RADIUS = 240;
 
-/* ── Individual card ── */
+/* ── 3D carousel card (desktop) ── */
 function CarouselCard({
     value,
     index,
@@ -83,30 +83,40 @@ function CarouselCard({
                 style={{ opacity, scale }}
                 className={`relative bg-white rounded-2xl border ${value.borderColor} shadow-lg p-6 flex flex-col items-center text-center overflow-hidden`}
             >
-                {/* Colored accent bar at bottom */}
                 <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${value.accent}`} />
-
-                {/* Icon */}
                 <div className={`w-16 h-16 mb-4 rounded-2xl ${value.iconBg} flex items-center justify-center`}>
                     <value.icon className={`w-7 h-7 ${value.iconColor}`} />
                 </div>
-
-                {/* Number */}
                 <span className={`text-4xl font-serif italic ${value.numberColor} block mb-1`}>
                     {value.number}
                 </span>
-
-                {/* Title */}
-                <h3 className="text-lg font-bold mb-2 text-stone-900">
-                    {value.title}
-                </h3>
-
-                {/* Description */}
-                <p className="text-stone-600 text-xs leading-relaxed max-w-[190px]">
-                    {value.desc}
-                </p>
+                <h3 className="text-lg font-bold mb-2 text-stone-900">{value.title}</h3>
+                <p className="text-stone-600 text-xs leading-relaxed max-w-[190px]">{value.desc}</p>
             </motion.div>
         </div>
+    );
+}
+
+/* ── Static card for mobile ── */
+function MobileValueCard({ value, index }: { value: (typeof values)[number]; index: number }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.5, delay: index * 0.1, ease: [0.25, 0.4, 0.25, 1] }}
+            className={`relative bg-white rounded-2xl border ${value.borderColor} shadow-sm p-6 flex flex-col items-center text-center overflow-hidden`}
+        >
+            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${value.accent}`} />
+            <div className={`w-14 h-14 mb-3 rounded-xl ${value.iconBg} flex items-center justify-center`}>
+                <value.icon className={`w-6 h-6 ${value.iconColor}`} />
+            </div>
+            <span className={`text-3xl font-serif italic ${value.numberColor} block mb-1`}>
+                {value.number}
+            </span>
+            <h3 className="text-base font-bold mb-2 text-stone-900">{value.title}</h3>
+            <p className="text-stone-600 text-xs leading-relaxed">{value.desc}</p>
+        </motion.div>
     );
 }
 
@@ -124,61 +134,88 @@ export function ValuesSection() {
     const angle = useSpring(rawAngle, { stiffness: 120, damping: 30 });
 
     return (
-        <div ref={containerRef} style={{ height: "200vh" }}>
-            <div
-                className="sticky top-20 bg-gradient-to-b from-rose-50 via-rose-50/80 to-white overflow-hidden"
-                style={{ height: "auto", maxHeight: "calc(100vh - 5rem)" }}
-            >
-                {/* Background blobs */}
+        <>
+            {/* ── Desktop: sticky 3D carousel ── */}
+            <div ref={containerRef} className="hidden md:block" style={{ height: "200vh" }}>
+                <div
+                    className="sticky top-20 bg-gradient-to-b from-rose-50 via-rose-50/80 to-white overflow-hidden"
+                    style={{ height: "auto", maxHeight: "calc(100vh - 5rem)" }}
+                >
+                    {/* Background blobs */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-10 left-1/4 w-[350px] h-[350px] bg-rose-200/40 rounded-full blur-[100px]" />
+                        <div className="absolute top-20 right-1/4 w-[250px] h-[250px] bg-violet-100/40 rounded-full blur-[80px]" />
+                        <div className="absolute bottom-10 right-1/3 w-[400px] h-[400px] bg-amber-100/30 rounded-full blur-[120px]" />
+                    </div>
+
+                    <div className="container mx-auto px-6 lg:px-12 relative z-10 pt-[75px] pb-10">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
+                            className="text-center mb-8"
+                        >
+                            <span className="inline-block px-4 py-2 rounded-full bg-white text-rose-600 text-sm font-medium tracking-wide mb-4 shadow-sm border border-rose-100">
+                                Nossos Princípios
+                            </span>
+                            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-stone-900">
+                                Nossos Valores
+                            </h2>
+                        </motion.div>
+
+                        <div
+                            className="flex items-start justify-center select-none pt-[200px] pb-[100px]"
+                            style={{ perspective: 1000, height: 600 }}
+                        >
+                            <motion.div
+                                style={{
+                                    width: CARD_WIDTH,
+                                    height: 280,
+                                    position: "relative",
+                                    transformStyle: "preserve-3d",
+                                    rotateY: angle,
+                                }}
+                            >
+                                {values.map((value, i) => (
+                                    <CarouselCard key={i} value={value} index={i} angle={angle} />
+                                ))}
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Mobile: normal scrollable cards ── */}
+            <section className="md:hidden py-20 bg-gradient-to-b from-rose-50 via-rose-50/80 to-white relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-10 left-1/4 w-[350px] h-[350px] bg-rose-200/40 rounded-full blur-[100px]" />
-                    <div className="absolute top-20 right-1/4 w-[250px] h-[250px] bg-violet-100/40 rounded-full blur-[80px]" />
-                    <div className="absolute bottom-10 right-1/3 w-[400px] h-[400px] bg-amber-100/30 rounded-full blur-[120px]" />
+                    <div className="absolute top-10 left-1/4 w-[250px] h-[250px] bg-rose-200/40 rounded-full blur-[80px]" />
+                    <div className="absolute bottom-10 right-1/4 w-[300px] h-[300px] bg-amber-100/30 rounded-full blur-[100px]" />
                 </div>
 
-                <div className="container mx-auto px-6 lg:px-12 relative z-10 pt-[75px] pb-10">
-                    {/* Header */}
+                <div className="container mx-auto px-6 relative z-10">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
+                        viewport={{ once: true, margin: "-50px" }}
                         transition={{ duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
-                        className="text-center mb-8"
+                        className="text-center mb-10"
                     >
                         <span className="inline-block px-4 py-2 rounded-full bg-white text-rose-600 text-sm font-medium tracking-wide mb-4 shadow-sm border border-rose-100">
                             Nossos Princípios
                         </span>
-                        <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-stone-900">
+                        <h2 className="text-3xl font-bold tracking-tight text-stone-900">
                             Nossos Valores
                         </h2>
                     </motion.div>
 
-                    {/* 3D Carousel — pushed down 200px from its natural position */}
-                    <div
-                        className="flex items-start justify-center select-none pt-[200px] pb-[100px]"
-                        style={{ perspective: 1000, height: 600 }}
-                    >
-                        <motion.div
-                            style={{
-                                width: CARD_WIDTH,
-                                height: 280,
-                                position: "relative",
-                                transformStyle: "preserve-3d",
-                                rotateY: angle,
-                            }}
-                        >
-                            {values.map((value, i) => (
-                                <CarouselCard
-                                    key={i}
-                                    value={value}
-                                    index={i}
-                                    angle={angle}
-                                />
-                            ))}
-                        </motion.div>
+                    <div className="flex flex-col gap-4">
+                        {values.map((value, i) => (
+                            <MobileValueCard key={i} value={value} index={i} />
+                        ))}
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </>
     );
 }

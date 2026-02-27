@@ -244,7 +244,7 @@ export function HeroSectionPremium() {
                                 initial={{ opacity: 0, x: -30, y: 20 }}
                                 animate={{ opacity: 1, x: 0, y: 0 }}
                                 transition={{ delay: 0.8, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-                                className="absolute -left-8 bottom-20 bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-xl border border-rose-100 max-w-[220px]"
+                                className="hidden sm:block absolute -left-4 lg:-left-8 bottom-20 bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-xl border border-rose-100 max-w-[220px]"
                             >
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="p-2 bg-rose-100 rounded-xl">
@@ -263,7 +263,7 @@ export function HeroSectionPremium() {
                                 initial={{ opacity: 0, x: 30, y: -20 }}
                                 animate={{ opacity: 1, x: 0, y: 0 }}
                                 transition={{ delay: 1, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-                                className="absolute -right-4 top-16 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-amber-100"
+                                className="hidden sm:block absolute -right-2 lg:-right-4 top-12 sm:top-16 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-amber-100"
                             >
                                 <div className="flex items-center gap-2">
                                     <div className="flex gap-0.5">
@@ -281,7 +281,7 @@ export function HeroSectionPremium() {
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 1.2, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-                                className="absolute -bottom-6 right-8 bg-gradient-to-br from-stone-900 to-stone-800 p-5 rounded-2xl shadow-xl text-white"
+                                className="absolute -bottom-2 right-4 sm:-bottom-6 sm:right-8 bg-gradient-to-br from-stone-900 to-stone-800 p-4 sm:p-5 rounded-2xl shadow-xl text-white"
                             >
                                 <p className="text-3xl font-bold">7+</p>
                                 <p className="text-xs text-stone-300 mt-1">

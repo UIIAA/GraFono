@@ -49,7 +49,7 @@ const specialties = [
     },
 ];
 
-/* ── Individual scroll-driven card ── */
+/* ── Individual scroll-driven card (desktop only) ── */
 function SpecialtyCard({
     card,
     index,
@@ -125,6 +125,31 @@ function SpecialtyCard({
     );
 }
 
+/* ── Static card for mobile ── */
+function MobileCard({ card, index }: { card: (typeof specialties)[number]; index: number }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.5, delay: index * 0.08, ease: [0.25, 0.4, 0.25, 1] }}
+            className="relative bg-white rounded-2xl p-6 border border-rose-100 overflow-hidden shadow-sm"
+        >
+            <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-rose-50">
+                    <card.icon className="w-5 h-5 text-rose-500" />
+                </div>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-50 text-rose-600">
+                    {card.badge}
+                </span>
+            </div>
+            <h3 className="text-lg font-bold text-stone-900 mb-2">{card.title}</h3>
+            <p className="text-stone-600 leading-relaxed text-sm">{card.desc}</p>
+            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient}`} />
+        </motion.div>
+    );
+}
+
 /* ── Main section ── */
 export function SpecialtiesGrid() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -135,44 +160,70 @@ export function SpecialtiesGrid() {
     });
 
     return (
-        /* Outer wrapper: scroll runway for the sticky animation */
-        <div ref={containerRef} id="especialidades" style={{ height: "300vh" }}>
-            {/* Sticky section — pinned below the fixed header (top-20 = 5rem = header height) */}
-            <div className="sticky top-20 bg-stone-50" style={{ height: "calc(100vh - 5rem)" }}>
-                {/* Background blobs */}
+        <>
+            {/* ── Desktop: sticky scroll-driven animation ── */}
+            <div ref={containerRef} id="especialidades" className="hidden md:block" style={{ height: "300vh" }}>
+                <div className="sticky top-20 bg-stone-50" style={{ height: "calc(100vh - 5rem)" }}>
+                    {/* Background blobs */}
+                    <div className="absolute inset-0 opacity-50 pointer-events-none">
+                        <div className="absolute top-20 left-10 w-72 h-72 bg-rose-100 rounded-full blur-[100px]" />
+                        <div className="absolute bottom-20 right-10 w-96 h-96 bg-stone-200 rounded-full blur-[120px]" />
+                    </div>
+
+                    <div className="container mx-auto px-6 lg:px-12 relative z-10 pt-12 lg:pt-16">
+                        <div className="text-center max-w-2xl mx-auto mb-10 lg:mb-12">
+                            <span className="inline-block px-4 py-2 rounded-full bg-white text-rose-600 text-sm font-medium tracking-wide mb-4 shadow-sm">
+                                Especialidades
+                            </span>
+                            <h2 className="text-4xl md:text-5xl font-bold text-stone-900 tracking-tight mb-6">
+                                Áreas de Atuação
+                            </h2>
+                            <p className="text-lg text-stone-600 leading-relaxed">
+                                Tratamentos personalizados para diversas necessidades do desenvolvimento infantil.
+                            </p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+                            {specialties.map((card, i) => (
+                                <SpecialtyCard
+                                    key={i}
+                                    card={card}
+                                    index={i}
+                                    scrollProgress={scrollYProgress}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Mobile: normal scrollable grid ── */}
+            <section id="especialidades-mobile" className="md:hidden py-20 bg-stone-50 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-50 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-rose-100 rounded-full blur-[100px]" />
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-stone-200 rounded-full blur-[120px]" />
                 </div>
 
-                {/* Content — pushed up with pt, not centered */}
-                <div className="container mx-auto px-6 lg:px-12 relative z-10 pt-12 lg:pt-16">
-                    {/* Header — always visible */}
-                    <div className="text-center max-w-2xl mx-auto mb-10 lg:mb-12">
+                <div className="container mx-auto px-6 relative z-10">
+                    <div className="text-center max-w-2xl mx-auto mb-10">
                         <span className="inline-block px-4 py-2 rounded-full bg-white text-rose-600 text-sm font-medium tracking-wide mb-4 shadow-sm">
                             Especialidades
                         </span>
-                        <h2 className="text-4xl md:text-5xl font-bold text-stone-900 tracking-tight mb-6">
+                        <h2 className="text-3xl font-bold text-stone-900 tracking-tight mb-4">
                             Áreas de Atuação
                         </h2>
-                        <p className="text-lg text-stone-600 leading-relaxed">
+                        <p className="text-base text-stone-600 leading-relaxed">
                             Tratamentos personalizados para diversas necessidades do desenvolvimento infantil.
                         </p>
                     </div>
 
-                    {/* Cards Grid */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+                    <div className="grid grid-cols-2 gap-4">
                         {specialties.map((card, i) => (
-                            <SpecialtyCard
-                                key={i}
-                                card={card}
-                                index={i}
-                                scrollProgress={scrollYProgress}
-                            />
+                            <MobileCard key={i} card={card} index={i} />
                         ))}
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </>
     );
 }
