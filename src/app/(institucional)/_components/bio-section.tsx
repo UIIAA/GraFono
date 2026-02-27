@@ -22,18 +22,34 @@ const credentials = [
     {
         icon: GraduationCap,
         title: "Pós em Análise do Comportamento (ABA)",
+        iconBg: "bg-violet-100",
+        iconColor: "text-violet-500",
+        hoverBg: "hover:bg-violet-50/50",
+        hoverBorder: "hover:border-violet-200",
     },
     {
         icon: Award,
         title: "Especialista em Distúrbios da Fala",
+        iconBg: "bg-rose-100",
+        iconColor: "text-rose-500",
+        hoverBg: "hover:bg-rose-50/50",
+        hoverBorder: "hover:border-rose-200",
     },
     {
         icon: BookOpen,
         title: "Certificação PROMPT",
+        iconBg: "bg-amber-100",
+        iconColor: "text-amber-500",
+        hoverBg: "hover:bg-amber-50/50",
+        hoverBorder: "hover:border-amber-200",
     },
     {
         icon: Heart,
         title: "Formação em Neuroreabilitação",
+        iconBg: "bg-emerald-100",
+        iconColor: "text-emerald-500",
+        hoverBg: "hover:bg-emerald-50/50",
+        hoverBorder: "hover:border-emerald-200",
     },
 ];
 
@@ -103,7 +119,7 @@ export function BioSection() {
                                 transition={{ delay: 0.4, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
                                 className="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl border border-rose-100"
                             >
-                                <p className="text-4xl font-bold text-rose-500">10+</p>
+                                <p className="text-4xl font-bold text-rose-500">7+</p>
                                 <p className="text-sm font-medium text-stone-600 mt-1">
                                     Anos de<br />Experiência
                                 </p>
@@ -165,11 +181,16 @@ export function BioSection() {
                                         duration: 0.5,
                                         ease: [0.25, 0.4, 0.25, 1],
                                     }}
-                                    className="group flex items-center gap-4 p-4 rounded-xl bg-stone-50/50 hover:bg-rose-50/50 border border-transparent hover:border-rose-100 transition-all duration-300"
+                                    whileHover={{ x: 4 }}
+                                    className={`group flex items-center gap-4 p-4 rounded-xl bg-stone-50/50 ${item.hoverBg} border border-transparent ${item.hoverBorder} transition-all duration-300 cursor-default`}
                                 >
-                                    <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-rose-100 transition-all duration-300">
-                                        <item.icon className="w-5 h-5 text-stone-400 group-hover:text-rose-500 transition-colors" />
-                                    </div>
+                                    <motion.div
+                                        whileHover={{ scale: 1.15, rotate: 8 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                        className={`p-2.5 rounded-xl ${item.iconBg} shadow-sm group-hover:shadow-md transition-shadow duration-300`}
+                                    >
+                                        <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                                    </motion.div>
                                     <span className="font-medium text-stone-700 text-sm">
                                         {item.title}
                                     </span>

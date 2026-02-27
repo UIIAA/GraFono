@@ -60,7 +60,7 @@ export function HeroSectionPremium() {
     return (
         <section
             ref={containerRef}
-            className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-b from-rose-50 via-stone-50 to-white"
+            className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-rose-50 via-stone-50 to-white"
         >
             {/* Animated Background Blobs */}
             <motion.div
@@ -283,7 +283,7 @@ export function HeroSectionPremium() {
                                 transition={{ delay: 1.2, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
                                 className="absolute -bottom-6 right-8 bg-gradient-to-br from-stone-900 to-stone-800 p-5 rounded-2xl shadow-xl text-white"
                             >
-                                <p className="text-3xl font-bold">10+</p>
+                                <p className="text-3xl font-bold">7+</p>
                                 <p className="text-xs text-stone-300 mt-1">
                                     Anos de<br />Experiência
                                 </p>

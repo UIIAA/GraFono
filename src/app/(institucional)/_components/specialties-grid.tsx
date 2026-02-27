@@ -60,8 +60,8 @@ function SpecialtyCard({
     scrollProgress: MotionValue<number>;
 }) {
     const total = specialties.length;
-    // Cards activate between 5% and 50% of scroll — compact so they finish before overlap
-    const start = 0.05 + (index / total) * 0.40;
+    // Cards activate between 1% and 40% of scroll — start sooner after section goes sticky
+    const start = 0.01 + (index / total) * 0.35;
     const end = start + 0.08;
 
     const rawProgress = useTransform(scrollProgress, [start, end], [0, 1]);
