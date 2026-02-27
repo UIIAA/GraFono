@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Heart, Star, Play } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 // Animation variants
 const fadeInUp = {
@@ -156,7 +157,7 @@ export function HeroSectionPremium() {
                             custom={0.5}
                             className="flex flex-col sm:flex-row gap-4 pt-4"
                         >
-                            <a href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20uma%20avalia%C3%A7%C3%A3o" target="_blank" rel="noopener noreferrer">
+                            <a href={SITE.whatsappAgendamento} target="_blank" rel="noopener noreferrer">
                                 <Button
                                     size="lg"
                                     className="group h-14 px-8 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-lg shadow-xl shadow-stone-900/20 hover:shadow-stone-900/30 transition-all duration-300 hover:scale-[1.02]"

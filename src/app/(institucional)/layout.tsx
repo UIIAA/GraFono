@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Phone, MapPin } from "lucide-react";
 import { Header } from "./_components/header";
+import { SITE } from "@/lib/constants";
 
 export default function InstitutionalLayout({
     children,
@@ -49,11 +50,11 @@ export default function InstitutionalLayout({
                         <ul className="space-y-3 text-sm">
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-4 h-4 text-rose-400 mt-1 shrink-0" />
-                                <span className="text-stone-400">Av. Trindade, 254 - Sala 710, Bethaville I<br />Barueri - SP</span>
+                                <span className="text-stone-400">{SITE.address}<br />{SITE.addressCity}</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Phone className="w-4 h-4 text-rose-400 shrink-0" />
-                                <a href="https://wa.me/5511991556534" className="text-stone-400 hover:text-rose-400 transition-colors">(11) 99155-6534</a>
+                                <a href={SITE.whatsapp} className="text-stone-400 hover:text-rose-400 transition-colors">{SITE.phoneFormatted}</a>
                             </li>
                         </ul>
                     </div>

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { MessageCircle, ArrowRight, Phone, Clock, MapPin } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 export function CtaSection() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,7 @@ export function CtaSection() {
                                 className="flex flex-col sm:flex-row gap-4 justify-center"
                             >
                                 <motion.a
-                                    href="https://wa.me/5511991556534"
+                                    href={SITE.whatsapp}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     whileHover={{ scale: 1.03 }}
@@ -123,7 +124,7 @@ export function CtaSection() {
                                 </motion.a>
 
                                 <motion.a
-                                    href="tel:+5511991556534"
+                                    href={`tel:+${SITE.phone}`}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-full font-medium border border-white/20 backdrop-blur-sm transition-all"
@@ -159,7 +160,7 @@ export function CtaSection() {
                             </div>
                             <div>
                                 <p className="font-semibold text-stone-900">Localização</p>
-                                <p className="text-sm text-stone-500">Rua da Prata, 123 - Bethaville, Barueri</p>
+                                <p className="text-sm text-stone-500">{SITE.addressFull}</p>
                             </div>
                         </div>
                     </motion.div>

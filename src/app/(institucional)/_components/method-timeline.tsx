@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { ClipboardList, Puzzle, HeartHandshake, Castle, ArrowRight } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 const steps = [
     {
@@ -76,13 +77,46 @@ export function MethodTimeline() {
     });
 
     // Progress line animation
-    const lineHeight = useTransform(smoothProgress, [0.1, 0.9], ["0%", "100%"]);
+    const lineHeight = useTransform(smoothProgress, [0.12, 0.58], ["0%", "100%"]);
+
+    // Dynamic line positioning — anchored to first & last step icons
+    const timelineRef = useRef<HTMLDivElement>(null);
+    const firstIconRef = useRef<HTMLDivElement>(null);
+    const lastIconRef = useRef<HTMLDivElement>(null);
+    const [linePos, setLinePos] = useState({ top: 0, height: 0 });
+
+    useEffect(() => {
+        function getOffsetTop(el: HTMLElement, ancestor: HTMLElement): number {
+            let offset = 0;
+            let current: HTMLElement | null = el;
+            while (current && current !== ancestor) {
+                offset += current.offsetTop;
+                current = current.offsetParent as HTMLElement | null;
+            }
+            return offset;
+        }
+
+        const update = () => {
+            const timeline = timelineRef.current;
+            const first = firstIconRef.current;
+            const last = lastIconRef.current;
+            if (!timeline || !first || !last) return;
+
+            const firstCenter = getOffsetTop(first, timeline) + first.offsetHeight / 2;
+            const lastCenter = getOffsetTop(last, timeline) + last.offsetHeight / 2;
+            setLinePos({ top: firstCenter, height: lastCenter - firstCenter });
+        };
+
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, []);
 
     return (
         <section
             ref={containerRef}
             id="metodologia"
-            className="py-32 bg-white relative overflow-hidden"
+            className="py-32 bg-white relative overflow-hidden z-20 rounded-t-[32px] shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.08)] -mt-[100vh]"
         >
             {/* Background Elements */}
             <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-rose-50/30 rounded-full blur-[120px]" />
@@ -110,15 +144,20 @@ export function MethodTimeline() {
                 </motion.div>
 
                 {/* Timeline */}
-                <div className="relative max-w-4xl mx-auto">
-                    {/* Progress Line - Desktop */}
-                    <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
-                        <div className="absolute inset-0 bg-stone-200" />
-                        <motion.div
-                            style={{ height: lineHeight }}
-                            className="absolute top-0 left-0 right-0 bg-gradient-to-b from-rose-400 to-rose-500"
-                        />
-                    </div>
+                <div ref={timelineRef} className="relative max-w-4xl mx-auto">
+                    {/* Progress Line - Desktop: 3px wide, anchored to first & last step icons */}
+                    {linePos.height > 0 && (
+                        <div
+                            className="hidden md:block absolute left-1/2 w-[3px] -translate-x-1/2"
+                            style={{ top: linePos.top, height: linePos.height }}
+                        >
+                            <div className="absolute inset-0 bg-stone-200 rounded-full" />
+                            <motion.div
+                                style={{ height: lineHeight }}
+                                className="absolute top-0 left-0 right-0 bg-gradient-to-b from-rose-400 to-rose-500 rounded-full"
+                            />
+                        </div>
+                    )}
 
                     {/* Steps */}
                     <div className="space-y-16 md:space-y-24">
@@ -164,6 +203,7 @@ export function MethodTimeline() {
 
                                     {/* Center Icon */}
                                     <motion.div
+                                        ref={index === 0 ? firstIconRef : index === steps.length - 1 ? lastIconRef : undefined}
                                         whileHover={{ scale: 1.1 }}
                                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                         className="relative z-10 shrink-0"
@@ -192,7 +232,7 @@ export function MethodTimeline() {
                             Pronta para começar essa jornada?
                         </p>
                         <motion.a
-                            href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20uma%20avalia%C3%A7%C3%A3o"
+                            href={SITE.whatsappAgendamento}
                             target="_blank"
                             rel="noopener noreferrer"
                             whileHover={{ scale: 1.02 }}

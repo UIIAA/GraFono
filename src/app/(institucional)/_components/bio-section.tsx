@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
 import { Award, BookOpen, GraduationCap, Heart } from "lucide-react";
 
 const fadeInUp = {
@@ -78,10 +79,12 @@ export function BioSection() {
                             {/* Main Image Container */}
                             <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden shadow-2xl shadow-rose-200/30 border-4 border-white">
                                 {/* Foto Graciele */}
-                                <img
+                                <Image
                                     src="/images/graciele-hero.jpg"
                                     alt="Graciele Costa - Fonoaudióloga Infantil"
-                                    className="absolute inset-0 w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 1024px) 100vw, 40vw"
                                 />
 
                                 {/* Hover Overlay */}

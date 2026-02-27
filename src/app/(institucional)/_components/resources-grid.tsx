@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { FileText, Video, Download, ArrowUpRight } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 const resources = [
     {
@@ -11,9 +12,16 @@ const resources = [
         desc: "Aprenda a identificar quando procurar ajuda profissional.",
         icon: FileText,
         badge: "Em breve",
-        // Substituir pelo link do Google Drive quando o PDF estiver pronto
         href: "",
         external: true,
+        iconBg: "bg-rose-100",
+        iconColor: "text-rose-500",
+        borderColor: "border-rose-200",
+        badgeBg: "bg-rose-50 text-rose-500",
+        badgeDisabled: "bg-rose-50/60 text-rose-300",
+        accent: "from-rose-400 to-pink-400",
+        linkColor: "text-rose-500",
+        hoverBorder: "hover:border-rose-200",
     },
     {
         type: "Vídeo",
@@ -23,6 +31,14 @@ const resources = [
         badge: "3 min",
         href: "https://www.instagram.com/p/DSTGVtLEWP0/",
         external: true,
+        iconBg: "bg-violet-100",
+        iconColor: "text-violet-500",
+        borderColor: "border-violet-200",
+        badgeBg: "bg-violet-50 text-violet-500",
+        badgeDisabled: "bg-violet-50/60 text-violet-300",
+        accent: "from-violet-400 to-purple-400",
+        linkColor: "text-violet-500",
+        hoverBorder: "hover:border-violet-200",
     },
     {
         type: "E-book",
@@ -30,9 +46,16 @@ const resources = [
         desc: "Um guia completo sobre o desenvolvimento da linguagem.",
         icon: Download,
         badge: "Em breve",
-        // Substituir pelo link do Google Drive quando o e-book estiver pronto
         href: "",
         external: true,
+        iconBg: "bg-amber-100",
+        iconColor: "text-amber-500",
+        borderColor: "border-amber-200",
+        badgeBg: "bg-amber-50 text-amber-500",
+        badgeDisabled: "bg-amber-50/60 text-amber-300",
+        accent: "from-amber-400 to-orange-400",
+        linkColor: "text-amber-600",
+        hoverBorder: "hover:border-amber-200",
     },
 ];
 
@@ -58,7 +81,8 @@ export function ResourcesGrid() {
                 className="absolute inset-0"
             >
                 <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-rose-100/40 rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-stone-200/60 rounded-full blur-[100px]" />
+                <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-violet-100/30 rounded-full blur-[100px]" />
+                <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-amber-100/30 rounded-full blur-[100px]" />
             </motion.div>
 
             <div className="container mx-auto px-6 lg:px-12 relative z-10">
@@ -108,37 +132,40 @@ export function ResourcesGrid() {
                                 }}
                             >
                                 <Wrapper
-                                    {...wrapperProps as any}
+                                    {...(wrapperProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
                                     className="block h-full"
                                 >
                                     <motion.div
                                         whileHover={{ y: isAvailable ? -8 : 0 }}
                                         transition={{ duration: 0.3 }}
-                                        className={`group relative bg-white rounded-2xl p-8 shadow-sm transition-all duration-500 border border-stone-100 h-full ${
+                                        className={`group relative bg-white rounded-2xl p-8 shadow-sm transition-all duration-500 border h-full overflow-hidden ${
                                             isAvailable
-                                                ? "hover:shadow-xl hover:border-rose-100 cursor-pointer"
-                                                : "opacity-75"
+                                                ? `${resource.borderColor} hover:shadow-xl ${resource.hoverBorder} cursor-pointer`
+                                                : "border-stone-200 opacity-75"
                                         }`}
                                     >
+                                        {/* Accent bar at bottom */}
+                                        <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${resource.accent} ${isAvailable ? "" : "opacity-40"}`} />
+
                                         {/* Badge */}
                                         <span className={`absolute top-6 right-6 text-xs font-medium px-3 py-1 rounded-full ${
-                                            isAvailable ? "bg-rose-50 text-rose-500" : "bg-stone-100 text-stone-400"
+                                            isAvailable ? resource.badgeBg : resource.badgeDisabled
                                         }`}>
                                             {resource.badge}
                                         </span>
 
                                         {/* Icon */}
-                                        <div className="w-14 h-14 rounded-xl bg-stone-50 group-hover:bg-rose-50 flex items-center justify-center mb-6 transition-colors duration-300">
-                                            <resource.icon className="w-6 h-6 text-stone-400 group-hover:text-rose-500 transition-colors duration-300" />
+                                        <div className={`w-14 h-14 rounded-xl ${resource.iconBg} flex items-center justify-center mb-6 ${isAvailable ? "" : "opacity-60"}`}>
+                                            <resource.icon className={`w-6 h-6 ${resource.iconColor}`} />
                                         </div>
 
                                         {/* Type */}
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2 block">
+                                        <span className={`text-xs font-semibold uppercase tracking-wider mb-2 block ${resource.iconColor}`}>
                                             {resource.type}
                                         </span>
 
                                         {/* Title */}
-                                        <h3 className="text-xl font-bold text-stone-900 mb-3 group-hover:text-stone-800 transition-colors">
+                                        <h3 className="text-xl font-bold text-stone-900 mb-3 transition-colors">
                                             {resource.title}
                                         </h3>
 
@@ -149,7 +176,7 @@ export function ResourcesGrid() {
 
                                         {/* Link */}
                                         <div className={`flex items-center gap-2 font-medium text-sm ${
-                                            isAvailable ? "text-rose-500 group-hover:gap-3" : "text-stone-400"
+                                            isAvailable ? `${resource.linkColor} group-hover:gap-3` : "text-stone-400"
                                         } transition-all`}>
                                             <span>{isAvailable ? "Acessar" : "Em breve"}</span>
                                             {isAvailable && <ArrowUpRight className="w-4 h-4" />}
@@ -177,7 +204,7 @@ export function ResourcesGrid() {
                             Dicas semanais para estimular a comunicação do seu filho.
                         </p>
                         <motion.a
-                            href="https://wa.me/5511991556534?text=Ol%C3%A1%2C%20gostaria%20de%20receber%20dicas%20sobre%20desenvolvimento%20da%20fala"
+                            href={SITE.whatsappDicas}
                             target="_blank"
                             rel="noopener noreferrer"
                             whileHover={{ scale: 1.02 }}

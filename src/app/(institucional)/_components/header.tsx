@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Phone, Instagram, Menu, X } from "lucide-react";
+import { SITE } from "@/lib/constants";
 
 const navLinks = [
     { href: "#sobre", label: "Sobre" },
@@ -41,12 +42,12 @@ export function Header() {
                 </nav>
 
                 <div className="flex items-center gap-3">
-                    <a href="https://instagram.com/graciele_fonoaudiologa" target="_blank" rel="noopener noreferrer">
+                    <a href={SITE.instagram} target="_blank" rel="noopener noreferrer">
                         <Button variant="ghost" size="icon" className="hidden sm:flex text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
                             <Instagram className="w-5 h-5" />
                         </Button>
                     </a>
-                    <a href="https://wa.me/5511991556534" target="_blank" rel="noopener noreferrer" className="hidden sm:block">
+                    <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer" className="hidden sm:block">
                         <Button className="rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg shadow-stone-900/20 hover:shadow-stone-900/30 transition-all hover:scale-[1.02]">
                             <Phone className="w-4 h-4 mr-2" />
                             Agendar
@@ -79,12 +80,12 @@ export function Header() {
                             </Link>
                         ))}
                         <div className="flex items-center gap-3 pt-4">
-                            <a href="https://instagram.com/graciele_fonoaudiologa" target="_blank" rel="noopener noreferrer">
+                            <a href={SITE.instagram} target="_blank" rel="noopener noreferrer">
                                 <Button variant="outline" size="icon" className="text-stone-400 hover:text-rose-500 hover:bg-rose-50">
                                     <Instagram className="w-5 h-5" />
                                 </Button>
                             </a>
-                            <a href="https://wa.me/5511991556534" target="_blank" rel="noopener noreferrer" className="flex-1">
+                            <a href={SITE.whatsapp} target="_blank" rel="noopener noreferrer" className="flex-1">
                                 <Button className="w-full rounded-full bg-stone-900 hover:bg-stone-800 text-white">
                                     <Phone className="w-4 h-4 mr-2" />
                                     Agendar Avaliação
