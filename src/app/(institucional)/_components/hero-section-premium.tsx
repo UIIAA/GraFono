@@ -60,7 +60,7 @@ export function HeroSectionPremium() {
     return (
         <section
             ref={containerRef}
-            className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-rose-50 via-stone-50 to-white"
+            className="relative py-24 md:py-0 md:min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-b from-rose-50 via-stone-50 to-white"
         >
             {/* Animated Background Blobs */}
             <motion.div
@@ -93,7 +93,7 @@ export function HeroSectionPremium() {
             />
 
             <div className="container mx-auto px-6 lg:px-12 relative z-10">
-                <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center min-h-[80vh]">
+                <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center md:min-h-[80vh]">
                     {/* Left Column - Content */}
                     <motion.div
                         style={{ y: titleY, opacity: titleOpacity }}
@@ -119,7 +119,7 @@ export function HeroSectionPremium() {
                             initial="hidden"
                             animate="visible"
                             custom={0.2}
-                            className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-stone-900 leading-[1.1]"
+                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-stone-900 leading-[1.1]"
                         >
                             Ajudando seu filho a encontrar sua{" "}
                             <span className="relative inline-block">
@@ -184,7 +184,7 @@ export function HeroSectionPremium() {
                             initial="hidden"
                             animate="visible"
                             custom={0.7}
-                            className="flex items-center gap-6 pt-8 border-t border-stone-100"
+                            className="flex items-center gap-6 pt-4 sm:pt-8 border-t border-stone-100"
                         >
                             <div className="flex -space-x-2">
                                 {[...Array(4)].map((_, i) => (
@@ -210,10 +210,10 @@ export function HeroSectionPremium() {
                         animate="visible"
                         custom={0.3}
                         style={{ y: imageY, scale: imageScale }}
-                        className="relative"
+                        className="relative pb-6 sm:pb-0"
                     >
                         {/* Main Image Container */}
-                        <div className="relative w-full aspect-[4/5] max-w-[520px] mx-auto">
+                        <div className="relative w-full aspect-square sm:aspect-[4/5] max-w-[320px] sm:max-w-[520px] mx-auto">
                             {/* Decorative Frame */}
                             <motion.div
                                 className="absolute -inset-4 rounded-[48px] bg-gradient-to-br from-rose-200/50 via-transparent to-rose-300/30 rotate-3"
@@ -298,7 +298,7 @@ export function HeroSectionPremium() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.5, duration: 0.6 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+                className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2"
             >
                 <span className="text-xs text-stone-400 tracking-widest uppercase">
                     Role para descobrir
